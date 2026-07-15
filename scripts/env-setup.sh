@@ -49,7 +49,7 @@ PS1='\[\033[01;36m\]repo\[\033[00m\]\[\033[01;33m\]\${PWD#${REPO_DIR}}\[\033[00m
 if [[ \$- == *i* && -z "\${COURSE_BANNER_SHOWN:-}" ]]; then
   export COURSE_BANNER_SHOWN=1
   echo "📂 You are in your course repo: ${REPO_DIR}"
-  echo "   Build inside the day's folder:  cd day2-minibuild"
+  echo "   Create/enter today's folder:    mkdir -p day2-minibuild && cd day2-minibuild"
   echo "   Then run your program by name:  python3 workflow.py"
 fi
 ${MARK_END}
