@@ -13,10 +13,9 @@ Template per entry:
 - **What I changed:**
 - **Where AI helped, and how I verified its output:**
 
----
-
-## Day 1 — Lab 0 (example format; replace with your own)
-- **What I built:** connected my Codespace to OpenRouter and ran the end-to-end demo.
-- **What failed:** first run rejected my key — I had pasted it with a trailing space.
-- **What I changed:** re-ran `bash scripts/set-key.sh` and re-ran the gateway task.
-- **Where AI helped, and how I verified its output:** asked the TUI to explain the agent loop; cross-checked its claims against the gateway log lines.
+-
+## Day 2 – Mini-Build: Workflow vs. Agent
+- **What I built:** Built two versions of the same meeting-notes processor. One was a fixed workflow with three model calls, and the other was an agent that decided which tools to use.
+- **What failed:** I struggled getting the programs to run because I was in the wrong directory. Once I switched to the correct folder, both versions ran correctly.
+- **What I changed:** I created the workflow and agent prompt files, verified both programs, and ran each version three times to compare performance.
+- **Where AI helped, and how I verified its output:** AI helped generate both programs, but I verified the output by checking every run against the assignment answer key. Both versions consistently scored 7/7, and I compared the calls, tokens, and turns across all runs.
