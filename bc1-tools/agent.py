@@ -29,7 +29,7 @@ TOOLS_SPEC = """Available tools (reply with ONE JSON object per turn):
 {"tool": "read_note", "name": "<file>"}                         -> full text of one note
 {"tool": "word_count", "name": "<file>"}                        -> number of words in a note file; use when you only need the size, not the content
 {"tool": "calculator", "expression": "<arithmetic expression>"} -> evaluate basic arithmetic (+, -, *, /, parentheses, decimals); use for any numeric calculation
-{"tool": "search_notes_compact", "query": "x"}                  -> search all notes case-insensitively; returns only (filename, matching line) pairs — far cheaper than search_notes_verbose
+{"tool": "search_notes_compact", "query": "x"}                  -> PREFERRED for "what do my notes say about X" questions: searches all notes case-insensitively and returns the single most relevant matching line per file (max 3 pairs total). The returned snippets are usually enough to answer directly — call finish after getting useful matches. Only call read_note if the user explicitly asks for the full note or needs more surrounding context.
 {"tool": "finish", "answer": "<final answer>"}                  -> end the task
 """
 
@@ -65,9 +65,13 @@ def run_tool(act: dict) -> str:
         q = act.get("query", "").lower()
         matches = []
         for p in sorted(DATA.glob("*.txt")):
+            # Keep only the first matching line per file
             for line in p.read_text().splitlines():
                 if q in line.lower():
                     matches.append(f"{p.name}: {line.strip()}")
+                    break  # one line per file
+            if len(matches) == 3:  # cap at 3 files total
+                break
         return "\n".join(matches) if matches else "no matches"
     return "ERROR: unknown tool " + repr(t)
 
