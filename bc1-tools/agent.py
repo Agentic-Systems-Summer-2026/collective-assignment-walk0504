@@ -24,15 +24,14 @@ DATA = pathlib.Path(__file__).resolve().parent / "data"
 MAX_STEPS = 12
 
 TOOLS_SPEC = """Available tools (reply with ONE JSON object per turn):
-{"tool": "list_notes"}                          -> filenames in the notes folder
-{"tool": "search_notes_verbose", "query": "x"}  -> FULL TEXT of every note containing x (wasteful — improve me!)
-{"tool": "read_note", "name": "<file>"}         -> full text of one note
-{"tool": "finish", "answer": "<final answer>"}  -> end the task
+{"tool": "list_notes"}                                          -> filenames in the notes folder
+{"tool": "search_notes_verbose", "query": "x"}                  -> FULL TEXT of every note containing x (wasteful — improve me!)
+{"tool": "read_note", "name": "<file>"}                         -> full text of one note
+{"tool": "word_count", "name": "<file>"}                        -> number of words in a note file; use when you only need the size, not the content
+{"tool": "calculator", "expression": "<arithmetic expression>"} -> evaluate basic arithmetic (+, -, *, /, parentheses, decimals); use for any numeric calculation
+{"tool": "search_notes_compact", "query": "x"}                  -> search all notes case-insensitively; returns only (filename, matching line) pairs — far cheaper than search_notes_verbose
+{"tool": "finish", "answer": "<final answer>"}                  -> end the task
 """
-# TODO(you): add 2-3 custom tools. Ideas: word_count, a calculator,
-# a token-efficient search that returns (filename, matching line) pairs,
-# a note-writer. Update TOOLS_SPEC *and* run_tool together — the spec is
-# the model's only knowledge of your interface.
 
 
 def run_tool(act: dict) -> str:
@@ -47,6 +46,29 @@ def run_tool(act: dict) -> str:
     if t == "read_note":
         p = DATA / pathlib.Path(act.get("name", "")).name
         return p.read_text() if p.exists() else "ERROR: no such note"
+    if t == "word_count":
+        p = DATA / pathlib.Path(act.get("name", "")).name
+        if not p.exists():
+            return f"ERROR: note '{p.name}' not found"
+        return str(len(p.read_text().split()))
+    if t == "calculator":
+        expr = act.get("expression", "")
+        # Allow only digits, whitespace, parentheses, decimal points, and + - * /
+        if not re.fullmatch(r"[\d\s().+\-*/]+", expr):
+            return "ERROR: expression contains disallowed characters"
+        try:
+            result = eval(expr, {"__builtins__": {}})  # noqa: S307 — pattern-guarded
+            return str(result)
+        except Exception as exc:
+            return f"ERROR: {exc}"
+    if t == "search_notes_compact":
+        q = act.get("query", "").lower()
+        matches = []
+        for p in sorted(DATA.glob("*.txt")):
+            for line in p.read_text().splitlines():
+                if q in line.lower():
+                    matches.append(f"{p.name}: {line.strip()}")
+        return "\n".join(matches) if matches else "no matches"
     return "ERROR: unknown tool " + repr(t)
 
 
