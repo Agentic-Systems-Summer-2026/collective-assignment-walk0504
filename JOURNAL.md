@@ -19,3 +19,12 @@ Template per entry:
 - **What failed:** I struggled getting the programs to run because I was in the wrong directory. Once I switched to the correct folder, both versions ran correctly.
 - **What I changed:** I created the workflow and agent prompt files, verified both programs, and ran each version three times to compare performance.
 - **Where AI helped, and how I verified its output:** AI helped generate both programs, but I verified the output by checking every run against the assignment answer key. Both versions consistently scored 7/7, and I compared the calls, tokens, and turns across all runs.
+## Day 3 – Build Challenge 1
+
+- **What I built:** I added three custom tools to my agent: a word counter, a calculator, and a compact search tool that returns matching lines instead of entire notes.
+
+- **What failed:** My first version of the compact search tool still caused the agent to make extra tool calls, so the overall token count was sometimes higher than expected.
+
+- **What I changed:** I updated the tool descriptions and improved the compact search tool so it returned fewer results and gave the model better guidance on when to stop searching.
+
+- **Where AI helped, and how I verified its output:** I used AI to generate and revise the Python code, then verified everything myself by running multiple tests. I confirmed the model selected each of my custom tools automatically and checked the traces and STATS output after every run.
