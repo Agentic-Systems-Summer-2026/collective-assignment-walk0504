@@ -1,0 +1,36 @@
+Stuffing 30 documents (~115,802 chars) into one request…
+
+To determine the approvals, logging requirements, and maximum unattended runtime for a student employee running a long-lived agent on a lab machine over the weekend, we must analyze relevant policies from the provided documents.
+
+### 1. **Maximum Unattended Runtime**
+Policy **AS-7** states:
+> "agents running unattended for more than 4 hours require written supervisor approval AND a named on-call contact. Maximum unattended runtime is 72 hours."
+
+This policy directly addresses the maximum allowed unattended runtime, which is **72 hours**.
+
+### 2. **Approvals Required**
+From **AS-7**, it is also stated that:
+> "agents running unattended for more than 4 hours require written supervisor approval AND a named on-call contact."
+
+Thus, since the agent will run over the weekend (which exceeds 4 hours), the student employee must obtain:
+- **Written supervisor approval**
+- A **named on-call contact**
+
+### 3. **Logging Requirements**
+Policy **AS-18** specifies:
+> "any automated system touching shared storage must write an append-only action log with timestamps, and logs must be retained for 90 days."
+
+Since the agent accesses a **shared drive**, this policy applies. Therefore, the following logging is required:
+- An **append-only action log with timestamps**
+- Logs must be **retained for 90 days**
+
+### Summary:
+- **Maximum unattended runtime:** 72 hours (AS-7)
+- **Required approvals:** Written supervisor approval and a named on-call contact (AS-7)
+- **Logging requirement:** Append-only action log with timestamps, retained for 90 days (AS-18)
+
+These answers are based on **Policy AS-7** and **Policy AS-18**.
+
+STATS: {'calls': 1, 'tokens': 24800, 'cache_hits': 0}
+
+Ground truth: AS-7 (written approval + on-call contact, 72h max), AS-18 (append-only logs, 90-day retention), AS-24 (read-only creds / data-owner sign-off). Did it cite exactly these, with correct details — or did it fall for the expired AS-12 (12h) or rescinded AS-27 (24h, verbal approval)?

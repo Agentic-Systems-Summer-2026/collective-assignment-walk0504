@@ -1,4 +1,4 @@
-# Build Challenge 2 — Context & Prompt Design (50 pts, due Fri Jul 17, 11:59 PM CT)
+cp overload_task.py fixed_task.py# Build Challenge 2 — Context & Prompt Design (50 pts, due Fri Jul 17, 11:59 PM CT)
 
 **Objective.** Deliberately induce a context-window failure on a multi-step
 task (drift, forgotten instructions, or overflow), then fix it using
