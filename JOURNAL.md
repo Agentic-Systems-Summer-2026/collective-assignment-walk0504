@@ -28,3 +28,10 @@ Template per entry:
 - **What I changed:** I updated the tool descriptions and improved the compact search tool so it returned fewer results and gave the model better guidance on when to stop searching.
 
 - **Where AI helped, and how I verified its output:** I used AI to generate and revise the Python code, then verified everything myself by running multiple tests. I confirmed the model selected each of my custom tools automatically and checked the traces and STATS output after every run.
+## Build Challenge 2
+
+The original program overloaded the model by sending all 30 policy documents even though only three were needed. This caused context drift and incomplete answers while using nearly 25,000 tokens.
+
+To fix it, I changed the program so it only retrieved the three relevant policies before sending them to the model. I also improved the analyst prompt so it ignored expired policies, verified every requirement was included, and cited every policy used.
+
+The result was a correct answer while reducing token usage from about 24,787 tokens to 574 tokens.
