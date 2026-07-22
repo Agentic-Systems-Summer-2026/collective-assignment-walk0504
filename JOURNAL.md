@@ -35,3 +35,10 @@ The original program overloaded the model by sending all 30 policy documents eve
 To fix it, I changed the program so it only retrieved the three relevant policies before sending them to the model. I also improved the analyst prompt so it ignored expired policies, verified every requirement was included, and cited every policy used.
 
 The result was a correct answer while reducing token usage from about 24,787 tokens to 574 tokens.
+
+## Build Challenge 3: Reliability and Rollback
+For this build, I started with the provided broken agent and identified several reliability problems. The original program did not have a timeout or retry process for network calls, silently ignored errors, trusted model responses without validating the JSON, erased the previous report at the start of every run, and did not save progress. This meant a temporary network issue, an invalid model response, or a Codespace interruption could cause missing work, repeated token usage, or a damaged report.
+
+I created `fixed_agent.py` and added request timeouts, three retries with exponential backoff, JSON validation, code-fence stripping, and a safe fallback that classifies an item as high risk when the model response cannot be trusted. I also added an atomic checkpoint file that saves progress after each request. The completed report is first written to a staged file, and the previous successful report is saved as a backup before the new report replaces it.
+
+I tested the program by intentionally corrupting the model response for CR-103. The agent retried three times, used the safe fallback, and continued processing the remaining requests without damaging the report. I also interrupted the program after three requests and restarted it. The program resumed at request four instead of repeating the first three requests. Finally, I ran the completed program again and verified that it did not reprocess the queue.
