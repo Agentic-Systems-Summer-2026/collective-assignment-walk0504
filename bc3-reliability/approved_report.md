@@ -1,0 +1,6 @@
+# Approved Changes
+
+- **CR-102** (low): Add an index on tickets.created_at to speed up the nightly report query. — Adding an index is a standard database optimization that poses minimal risk to system stability.
+- **CR-104** (low): Bump the Python base image from 3.11.8 to 3.11.9 in the agent container. — Minor patch version update for Python base image with no breaking changes or dependency modifications.
+- **CR-106** (low): Add a retry with exponential backoff to the webhook sender. — Adding retry logic with exponential backoff is a common, well-understood pattern that improves reliability without significant complexity.
+- **CR-108** (low): Increase the request timeout on the LLM gateway from 60s to 120s for long comple — Simple configuration change that only extends timeout duration and doesn't affect system stability or data integrity.
