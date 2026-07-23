@@ -5,42 +5,43 @@
 **Student:** Jolie Walker  
 **Course:** Agentic Systems  
 **Project:** AgInsight  
-**Date:** July 23, 2026  
+**Date:** July 23, 2026
 
 ---
 
-## 1. Project Overview
+# 1. Project Overview
 
-AgInsight is an agentic AI system designed to help farmers monitor important weather conditions and commodity prices. The system reviews incoming farm-related data, creates an alert, checks the alert against the original data, and only approves the alert if the information is supported.
+AgInsight is an agentic AI system designed to help farmers monitor important weather conditions and commodity market information. The system collects data, generates alerts, validates every alert against the original source data, and only approves alerts that are supported by the available information.
 
-The purpose of AgInsight is not only to provide useful information, but also to reduce the risk of sending farmers inaccurate or misleading alerts. Agricultural decisions can affect crop health, livestock safety, operating costs, and income. Because of this, an alert should not be treated as trustworthy only because it was written by an AI model.
+The purpose of AgInsight is to improve trust in AI-generated alerts. Farmers often make important decisions based on weather and market conditions, so inaccurate information could lead to unnecessary costs or poor operational decisions. Instead of assuming AI-generated information is correct, AgInsight verifies every statement before it is presented to the user.
 
-The current working version of AgInsight uses sample weather and commodity data to demonstrate one complete end-to-end workflow. It reads the source data, generates an alert, checks each statement, removes an unsupported statement, checks the corrected alert again, and saves a record of the process.
-
----
-
-## 2. Problem Statement
-
-Farmers make decisions using information from several different sources, including weather forecasts, commodity markets, government announcements, and farm records. Monitoring all of these sources can take time, especially when conditions change quickly.
-
-An AI monitoring agent could help by reviewing information and creating timely alerts. However, AI systems can also generate statements that are not supported by the source data. In agriculture, an inaccurate alert could cause a farmer to delay work unnecessarily, misunderstand market conditions, or make a decision based on false information.
-
-AgInsight addresses this problem by adding a grounding check before an alert is approved. Each statement in the alert is compared with the original weather or commodity data. Unsupported statements are flagged instead of being shown as normal, trusted information.
+The current prototype demonstrates one complete monitoring cycle using live weather data, commodity market integration, grounding validation, automatic fallback behavior, and observability logging.
 
 ---
 
-## 3. Project Goals
+# 2. Problem Statement
 
-The main goals of the current AgInsight design are:
+Farmers rely on information from several different sources every day, including weather forecasts, commodity markets, government announcements, and farm records. Monitoring these sources manually can take time, especially when conditions change quickly.
 
-1. Monitor weather and commodity information relevant to a farm.
-2. Generate a clear alert based on the available data.
-3. Check every alert statement against the original source data.
-4. Rewrite the alert one time when unsupported information is found.
-5. Hold or discard an alert if it still fails after the rewrite.
-6. Record the source data, checks, decisions, and final result.
-7. Keep important decisions visible to the farmer.
-8. Support future review of past alerts and system performance.
+AI systems can summarize this information, but they may also generate statements that are not supported by the available data. In agriculture, an inaccurate alert could cause a farmer to delay work unnecessarily, misunderstand market conditions, or make decisions based on incorrect information.
+
+AgInsight addresses this problem by validating every alert before it is approved. Every generated statement is compared to the original source data, and unsupported information is removed before the alert reaches the farmer.
+
+---
+
+# 3. Project Goals
+
+The current goals of AgInsight are:
+
+1. Retrieve live weather information.
+2. Retrieve commodity market information.
+3. Generate alerts dynamically based on current conditions.
+4. Validate every generated statement using grounding.
+5. Remove unsupported statements when necessary.
+6. Allow only one correction attempt.
+7. Approve or hold alerts based on validation results.
+8. Record every monitoring cycle in an observability log.
+9. Provide a strong foundation for future agricultural automation.
 
 ---
 
@@ -48,159 +49,173 @@ The main goals of the current AgInsight design are:
 
 The current AgInsight prototype is organized into six major components.
 
-### Data Collection
+## Data Collection
 
-The current prototype uses sample weather and commodity data to demonstrate the complete workflow. This allows the alert generation, grounding check, and observability features to be tested without requiring live API connections. Future versions of AgInsight will replace the sample data with live weather and commodity market APIs.
+The prototype retrieves live weather information for Weatherford, Oklahoma, using the Open-Meteo API. It also attempts to retrieve commodity market information from the Alpha Vantage API.
 
-### Alert Generation
+Because external services may become unavailable or temporarily rate-limit requests, AgInsight includes automatic fallback behavior. When an API cannot be reached, clearly labeled fallback values are used so the monitoring cycle can continue instead of failing.
 
-The agent reviews the available data and creates a natural language alert for the farmer. The alert summarizes important conditions such as extreme heat, high wind, or commodity prices.
+## Alert Generation
 
-### Grounding Check
+Using the collected weather and commodity information, the system generates natural language alerts. Alerts are created dynamically based on the current conditions instead of using hardcoded messages.
 
-Before the alert is approved, every statement is checked against the original source data. Statements that cannot be supported by the available data are marked as failed. This reduces the chance that incorrect AI-generated information reaches the farmer.
+## Grounding Validation
 
-### Unsupported Statement Removal
+Every generated alert is checked against the original source data before approval. Each statement is individually validated to verify that it is supported by the available information.
 
-If unsupported information is found, the system removes unsupported statements from the alert. The updated alert is then checked one additional time before a final approval decision is made. Limiting the process to a single additional check prevents endless correction loops while ensuring that only supported information is included in the final alert.
+## One Correction Attempt
 
-### Observability
+If unsupported information is found, the system removes unsupported statements and performs one additional grounding check. Limiting the process to one correction attempt prevents endless correction loops while still improving reliability.
 
-Every execution is recorded in a log file. The log includes the original source data, generated alert, grounding results, rewritten alert, and final approval status. This provides a complete history of system behavior for debugging and future evaluation.
+## Observability
 
-### Human Oversight
+Every monitoring cycle is written to an observability log. The log records:
 
-The farmer remains responsible for making final decisions. AgInsight is designed to support decision making rather than replace human judgment.
+- Source weather data
+- Source commodity data
+- Initial alert
+- Grounding results
+- Corrected alert
+- Final approval status
+- Timestamp
+
+These records support debugging, evaluation, and future system improvements.
+
+## Human Oversight
+
+AgInsight supports farmer decision making but does not replace it. The farmer remains responsible for all operational decisions made on the farm.
 
 ---
 
 # 5. Agent Workflow
 
-The workflow implemented in the current prototype is shown below.
+The current workflow is shown below.
 
-```
-Weather Data
-        │
-Commodity Prices
-        │
-        ▼
-Generate Alert
-        │
-        ▼
-Grounding Check
-        │
- ┌──────┴──────┐
- │             │
-PASS         FAIL
- │             │
- │        Rewrite Once
- │             │
- └──────┬──────┘
-        ▼
-Second Grounding Check
-        │
-        ▼
-Approve or Hold Alert
-        │
-        ▼
-Save Log
-```
+Live Weather API
+
++
+
+Commodity Market API
+
+↓
+
+Dynamic Alert Generation
+
+↓
+
+Grounding Validation
+
+↓
+
+Unsupported Information Found?
+
+↓
+
+One Correction Attempt
+
+↓
+
+Final Approval or Hold
+
+↓
+
+Observability Log
+
 ---
 
-# 6. Design Trade-Offs
+# 6. Design Decisions
 
-Several design decisions were made during the development of AgInsight to improve reliability while keeping the system simple enough for a working prototype.
+Several important design decisions were made while building AgInsight.
 
-### Single Rewrite Limit
+## Reliability Over Speed
 
-AgInsight only attempts one rewrite if unsupported information is detected. Allowing unlimited rewrites could cause the system to enter an endless correction loop. A single rewrite keeps the workflow predictable while still giving the agent an opportunity to correct mistakes.
+The system prioritizes accurate information over fast delivery. Spending a little more time validating alerts helps reduce the chance of incorrect information reaching the farmer.
 
-### Grounding Before Delivery
+## Ground Before Delivery
 
-The grounding check occurs before an alert is delivered to the farmer. This design choice prioritizes accuracy over speed. While this adds one additional processing step, it greatly reduces the chance of unsupported AI-generated statements reaching the user.
+Every alert must pass grounding validation before approval. This reduces hallucinations and increases trust in AI-generated information.
 
-### Human-in-the-Loop
+## One Correction Limit
 
-AgInsight is designed to support farmers rather than replace them. The system provides recommendations, but the farmer remains responsible for making operational decisions. Future self-improvement suggestions will also require farmer approval before being adopted.
+Only one correction attempt is allowed. This prevents the workflow from entering endless rewrite loops while still allowing unsupported information to be removed.
 
-### Comprehensive Logging
+## Graceful API Fallback
 
-Every alert, including successful alerts, rewritten alerts, and failed alerts, is recorded. Keeping a complete history makes it easier to evaluate system performance, identify recurring problems, and improve future versions of the agent.
+External APIs may occasionally fail or become rate-limited. Instead of stopping the workflow, AgInsight automatically switches to fallback data so monitoring can continue.
 
-### Limited Initial Scope
+## Complete Observability
 
-The current prototype focuses only on weather conditions and commodity prices. Limiting the scope allowed the core workflow to be implemented and tested before adding additional data sources such as USDA reports, grants, equipment maintenance, or local farm records.
+Every monitoring cycle is recorded. Keeping detailed logs makes it easier to evaluate system performance and identify future improvements.
+
 ---
 
 # 7. Risk and Observability Plan
 
-Several risks were identified during the design of AgInsight.
+Several risks were considered during development.
 
 | Risk | Mitigation |
 |------|------------|
-| Unsupported AI statements | Grounding check validates every alert before delivery. |
-| Infinite correction loop | The system only performs one rewrite attempt. |
-| False alerts | Unsupported alerts are held instead of being approved. |
-| Missing audit trail | Every execution is written to a log file. |
-| Future model drift | Historical logs can be reviewed to identify recurring problems. |
+| Unsupported AI statements | Ground every alert before approval. |
+| Endless correction loops | Limit corrections to one attempt. |
+| External API failure | Use clearly labeled fallback data. |
+| Missing audit trail | Record every monitoring cycle. |
+| Future model drift | Review historical logs to identify recurring issues. |
 
-Observability is supported through detailed logging. Each execution records:
+The observability log records:
 
-- Source weather data
-- Source commodity data
-- Initial alert
-- Grounding check results
-- Rewritten alert
-- Final approval status
+- Weather source data
+- Commodity source data
+- Generated alerts
+- Grounding results
+- Final approval decision
 - Timestamp
 
-These records provide evidence for evaluation and future system improvements.
+These records provide evidence for evaluation and future improvements.
+
 ---
 
 # 8. Alignment with Instructor Feedback
 
-During the proposal review, feedback was provided recommending that AgInsight perform a grounding check before presenting alerts to the farmer. This recommendation became one of the primary design goals for the project.
+One of the primary recommendations received during the proposal review was to perform grounding validation before presenting alerts to the farmer. That recommendation became one of the central design goals for AgInsight.
 
-The current prototype demonstrates this behavior by validating every generated statement against the available weather and commodity data. If unsupported information is identified, the system performs one rewrite and checks the revised alert again before making a final decision.
+The current prototype validates every generated statement against the original weather and commodity information. Unsupported statements are removed before approval, making the final alert more trustworthy.
 
-The instructor also recommended keeping detailed records of each alert so the system can later review its own performance. The prototype records the source data, generated alert, grounding results, rewritten alert, and final status in an observability log. These records provide the foundation for the future self-review capability planned for the final version of AgInsight.
+Another recommendation was to maintain detailed records of system behavior. Every monitoring cycle is saved in an observability log so future versions of AgInsight can analyze previous alerts, identify recurring mistakes, and support future self-review capabilities.
 
-The future self-review component will analyze historical alerts, identify recurring mistakes or false alarms, and recommend improvements. Any suggested changes will remain human-approved before they become part of the system. This keeps the farmer in control while allowing the agent to improve over time.
 ---
 
 # 9. Current Prototype Status
 
-The current prototype demonstrates one complete end-to-end workflow.
+The current prototype successfully demonstrates one complete end-to-end monitoring cycle.
 
-The prototype currently supports:
+Current capabilities include:
 
-- Weather monitoring
-- Commodity price monitoring
-- Natural language alert generation
-- Statement-by-statement grounding validation
-- One automatic rewrite attempt
-- Final approval or rejection of alerts
+- Live weather retrieval using the Open-Meteo API
+- Commodity API integration
+- Automatic fallback when APIs fail or become rate-limited
+- Dynamic alert generation
+- Grounding validation
+- One correction attempt
+- Final approval decisions
 - Observability logging
-- Multiple evaluation scenarios
 
-The following capabilities are planned for future versions:
-These capabilities are not included in the current prototype but represent planned enhancements for future development.
-- Live weather APIs
-- Live commodity market APIs
-- USDA announcements
-- Grant opportunities
+Future development will include:
+
+- Local elevator cash bids
+- USDA market reports
 - Equipment maintenance reminders
+- SMS and mobile notifications
+- Multi-farm monitoring
 - Historical trend analysis
-- Farmer feedback collection
-- Self-review and improvement recommendations
+- Farmer feedback integration
+- Human-approved self-review recommendations
+
 ---
 
 # 10. Conclusion
 
 AgInsight demonstrates how an agentic AI system can improve trust in automated agricultural decision support by validating its own output before presenting information to the user.
 
-The current prototype successfully implements an end-to-end workflow that includes data collection, alert generation, grounding validation, limited rewriting, approval decisions, and observability logging. Evaluation results showed that the system responded correctly to different weather conditions and prevented unsupported statements from appearing in approved alerts.
+The current prototype successfully retrieves live weather information, integrates external commodity market data, generates alerts dynamically, validates every alert using grounding, handles API failures through automatic fallback behavior, and records every monitoring cycle for future evaluation.
 
-Future work will expand AgInsight by connecting live data sources, increasing the number of monitored agricultural resources, and implementing a human-approved self-review process that allows the system to recommend improvements based on historical performance.
-
-Overall, this project establishes a reliable foundation for a trustworthy agricultural monitoring agent while maintaining transparency, accountability, and human oversight.
+Although the project is still under development, the current implementation provides a strong foundation for future autonomous agricultural monitoring. Future versions will expand the number of monitored data sources while maintaining transparency, reliability, and human oversight.
