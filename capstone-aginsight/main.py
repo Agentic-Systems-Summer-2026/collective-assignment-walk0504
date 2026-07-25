@@ -152,8 +152,7 @@ def get_live_commodity_prices():
         print("Using fallback commodity data so the workflow can continue.")
         return fallback_commodities
 
-weather_data = get_live_weather()
-commodity_data = get_live_commodity_prices()
+
 
 # ---------------------------------------------------------
 # 2. GENERATE AN INITIAL ALERT
@@ -280,6 +279,8 @@ def rewrite_alert(checked_statements):
 # ---------------------------------------------------------
 
 def save_log(
+    weather,
+    commodities,
     initial_alert,
     first_check,
     final_alert,
@@ -301,8 +302,8 @@ def save_log(
     record = {
         "timestamp": datetime.now().isoformat(),
         "source_data": {
-            "weather": weather_data,
-            "commodities": commodity_data
+            "weather": weather,
+            "commodities": commodities
         },
         "initial_alert": initial_alert,
         "first_grounding_check": first_check,
@@ -319,8 +320,52 @@ def save_log(
 # ---------------------------------------------------------
 # 6. RUN THE COMPLETE WORKFLOW
 # ---------------------------------------------------------
+def evaluate_monitoring_case(weather, commodities):
+    """Runs AgInsight using fixed test data without calling live APIs."""
+
+    initial_alert = generate_alert(weather, commodities)
+
+    first_check = run_grounding_check(
+        initial_alert,
+        weather,
+        commodities
+    )
+
+    rewrite_needed = any(
+        not item["passed"] for item in first_check
+    )
+
+    if rewrite_needed:
+        final_alert = rewrite_alert(first_check)
+
+        final_check = run_grounding_check(
+            final_alert,
+            weather,
+            commodities
+        )
+    else:
+        final_alert = initial_alert
+        final_check = first_check
+
+    final_status = (
+        "approved"
+        if final_check and all(item["passed"] for item in final_check)
+        else "held"
+    )
+
+    return {
+        "initial_alert": initial_alert,
+        "first_grounding_check": first_check,
+        "rewrite_attempted": rewrite_needed,
+        "final_alert": final_alert,
+        "final_grounding_check": final_check,
+        "final_status": final_status
+    }
 
 def main():
+    weather_data = get_live_weather()
+    commodity_data = get_live_commodity_prices()
+
     print("=" * 60)
     print("AGINSIGHT: TRUSTWORTHY FARM MONITORING AGENT")
     print("=" * 60)
@@ -387,6 +432,8 @@ def main():
     print(f"\nFINAL STATUS: {final_status}")
 
     save_log(
+        weather_data,
+        commodity_data,
         initial_alert,
         first_check,
         final_alert,

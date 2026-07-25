@@ -14,6 +14,7 @@ Three layers, per the pre-read:
   2. LLM-as-judge — calibrate against your own labels before trusting it
   3. error analysis — look at the failures, not just the score
 """
+import importlib.util
 import json
 import pathlib
 import sys
@@ -23,13 +24,29 @@ from common.llm import chat, STATS
 
 HERE = pathlib.Path(__file__).resolve().parent
 CASES = HERE / "cases.jsonl"
+CAPSTONE_MAIN = HERE.parent / "capstone-aginsight" / "main.py"
 
+spec = importlib.util.spec_from_file_location(
+    "aginsight_main",
+    CAPSTONE_MAIN
+)
+
+aginsight = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(aginsight)
 PASS_THRESHOLD = 0.8  # the CI gate fails below this — tune with evidence
 
 
 def target(prompt: str) -> str:
-    """The system under test. REPLACE ME with a call into your own agent."""
-    return chat([{"role": "user", "content": prompt}], max_tokens=300, cache=True)
+    """Runs AgInsight using fixed weather and commodity test data."""
+
+    test_input = json.loads(prompt)
+
+    result = aginsight.evaluate_monitoring_case(
+        test_input["weather"],
+        test_input["commodities"]
+    )
+
+    return json.dumps(result, indent=2)
 
 
 def check_case(case: dict, output: str) -> tuple[bool, str]:
