@@ -43,3 +43,59 @@ The AgInsight prototype was evaluated using multiple weather scenarios to verify
 ## Evaluation Summary
 
 These evaluation scenarios demonstrate that the prototype responds to changing input conditions instead of producing the same output every time. The grounding check correctly identifies unsupported statements before they reach the user, and only supported information is included in the final approved alert.
+
+## Evaluation after Build 4
+# Evaluation Summary
+
+I built an evaluation harness for AgInsight that tests the main parts of the system using fixed weather and commodity data. The harness checks whether AgInsight creates the correct alerts, avoids unsupported alerts, includes the correct wheat price, returns the right approval status, and follows the expected JSON format.
+
+I created eight evaluation cases. The cases covered normal conditions, heat, extreme heat, high wind, heavy rain, multiple weather risks at once, exact threshold boundaries, and output formatting.
+
+The final local sweep passed 8 out of 8 cases for a 100% pass rate. The required threshold was 80%.
+
+## Metrics
+
+- Total cases: 8
+- Passed cases: 8
+- Failed cases: 0
+- Final pass rate: 100%
+- Required threshold: 80%
+- CI live sweep size: 5 cases
+- Green GitHub Actions run: Passed
+- Deliberately broken GitHub Actions run: Failed as expected
+
+## Judge Calibration
+
+I first ran the LLM judge on all eight cases and got a 75% pass rate. I reviewed the two failures by hand.
+
+The heat case was actually correct, but the judge expected the output to clearly explain that 97 degrees was not extreme heat. That explanation was not required because the system already avoided creating an extreme heat alert.
+
+The wind case was also correct, but the judge treated the wheat price as unrelated information. AgInsight is designed to include the wheat price in every monitoring cycle, so the judge criteria did not match the actual system design.
+
+I updated the judge criteria to better match my own human labels. After calibration, the judge agreed with my labels on all eight cases, and the final pass rate increased to 100%.
+
+## Error Analysis
+
+The most important lesson from the failed cases was that an LLM judge can be wrong even when the system output is correct. The original judge criteria were too vague and allowed the judge to add requirements that were not part of AgInsight.
+
+The heat output correctly included a heat advisory at 97 degrees and did not include an extreme heat alert. The judge still failed it because it wanted an extra explanation. The wind output correctly included a high wind advisory, but the judge failed it because it did not understand that the wheat price is always included by design.
+
+These failures showed me that judge criteria need to be specific and tied directly to the system requirements. I changed the criteria so the judge checked only the expected alerts, the correct values, and the absence of unsupported alerts.
+
+Another limitation is that the evaluation uses fixed test data. This makes the tests repeatable, but it does not fully test problems caused by live APIs, outdated source data, or temporary service failures. Those issues would need separate integration tests.
+
+## CI Regression Gate
+
+I connected the evaluation harness to GitHub Actions. The workflow runs on every push and tests the first five cases. The build fails if the pass rate drops below 80%.
+
+I first pushed the working version and confirmed that the GitHub Actions run passed. I then deliberately changed the pass threshold to 110%, which caused the run to fail. This proved that the regression gate can catch a broken threshold or regression. I then restored the threshold to 80% and pushed again so the repository ended in a passing state.
+
+## AI Delegation Log
+
+I used ChatGPT to help me understand the starter harness, connect it to my AgInsight project, create the first draft of the evaluation cases, and troubleshoot Python indentation and GitHub Actions errors.
+
+The main prompts I used asked how to connect the harness to my capstone, how to create AgInsight-specific test cases, how to understand failed judge results, and how to fix the missing `requests` package in GitHub Actions.
+
+The AI was not correct every time. Some early instructions changed more of my capstone than necessary, and the first judge criteria caused two correct outputs to fail. I reviewed the code, checked the outputs myself, corrected the judge criteria, and reran the evaluation until the results matched my own labels.
+
+I verified the final result by running the full local sweep, reviewing `last_run.json`, checking that all eight cases passed, confirming the green GitHub Actions run, creating a deliberate broken run, and restoring the repository to a passing state.
