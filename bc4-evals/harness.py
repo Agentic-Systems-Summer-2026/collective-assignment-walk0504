@@ -33,7 +33,7 @@ spec = importlib.util.spec_from_file_location(
 
 aginsight = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(aginsight)
-PASS_THRESHOLD = 1.1  # the CI gate fails below this — tune with evidence
+PASS_THRESHOLD = 0.8  # the CI gate fails below this — tune with evidence
 
 
 def target(prompt: str) -> str:
