@@ -52,3 +52,13 @@ I created eight test cases that covered normal conditions, heat, extreme heat, h
 I also connected the harness to GitHub Actions so a small five-case evaluation runs on every push. The first GitHub Actions run failed because the workflow did not install the `requests` package used by AgInsight. I added that dependency, pushed again, and the next run passed. I then deliberately changed the pass threshold to 110% to prove the regression gate could catch a broken build. After confirming the failed run, I restored the threshold to 80% and pushed again so the repository ended in a passing state.
 
 The biggest thing I learned was that an LLM judge still needs human review. A judge can fail a correct answer when the criteria are too vague or do not match the system design. I had to review the outputs myself and adjust the criteria before I could trust the final score.
+
+## Build Challenge 5 — Observability and Oversight
+
+For this build, I added structured JSON trace logging to each step of the agent. The trace records the timestamp, step name, model, prompt size, response size, latency, token usage, and the decision made. This made it much easier to see exactly what happened during each step of the program.
+
+I also added a human approval step before the program writes the final summary to summary.md. The program now shows the summary, token usage, and estimated cost before asking if it should save the file. The user's decision is also added to the trace.
+
+To test everything, I purposely broke the summary prompt by making it an empty string. The request failed, and the trace showed that the plan and answers steps worked while the summary step failed. After that, I fixed the prompt, ran the program again, and confirmed everything worked correctly.
+
+ChatGPT helped me write parts of the trace logging code and troubleshoot problems like indentation and error handling. I tested every change myself by running the program, checking the trace, testing both the approval and rejection paths, creating a real failure, and making sure the final version worked correctly.
