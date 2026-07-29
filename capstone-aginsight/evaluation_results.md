@@ -1,4 +1,4 @@
-# Early Evaluation Results
+# Evaluation Results
 
 The AgInsight prototype was evaluated using multiple weather scenarios to verify that the alert generation and grounding workflow behaved correctly under different conditions.
 
@@ -42,10 +42,9 @@ The AgInsight prototype was evaluated using multiple weather scenarios to verify
 
 ## Evaluation Summary
 
-These evaluation scenarios demonstrate that the prototype responds to changing input conditions instead of producing the same output every time. The grounding check correctly identifies unsupported statements before they reach the user, and only supported information is included in the final approved alert.
+These early evaluation scenarios confirmed that AgInsight responded correctly to different weather conditions and that the grounding validation removed unsupported statements before alerts were approved. As the project developed, the evaluation process expanded into a repeatable eight-case evaluation harness with defined metrics and automated regression testing. The Build 4 evaluation below represents the final evaluation approach for the project.
 
-## Evaluation after Build 4
-# Evaluation Summary
+## Build 4 Evaluation
 
 I built an evaluation harness for AgInsight that tests the main parts of the system using fixed weather and commodity data. The harness checks whether AgInsight creates the correct alerts, avoids unsupported alerts, includes the correct wheat price, returns the right approval status, and follows the expected JSON format.
 

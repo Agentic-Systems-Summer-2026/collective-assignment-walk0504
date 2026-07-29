@@ -1,0 +1,58 @@
+[
+ {
+  "id": "normal-01",
+  "pass": true,
+  "assertion": "ok",
+  "judge": "Output shows normal monitoring result with only wheat price alert and approved final status",
+  "output": "{\n  \"initial_alert\": [\n    \"The latest available wheat price is $5.72 per bushel.\"\n  ],\n  \"first_grounding_check\": [\n    {\n      \"statement\": \"The latest available wheat price is $5.72 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"rewrite_attempted\": false,\n  \"final_alert\": [\n    \"The latest available wheat price is $5.72 per bushel.\"\n  ],\n  \"final_grounding_check\": [\n    {\n      \"statement\": \"The latest available wheat price is $5.72 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"final_status\": \"approved\"\n}"
+ },
+ {
+  "id": "heat-01",
+  "pass": true,
+  "assertion": "ok",
+  "judge": "Includes heat advisory for 97 degrees and correct wheat price, no extreme heat, high wind, or heavy rain alerts",
+  "output": "{\n  \"initial_alert\": [\n    \"Heat advisory: the current temperature is 97 degrees Fahrenheit.\",\n    \"The latest available wheat price is $5.72 per bushel.\"\n  ],\n  \"first_grounding_check\": [\n    {\n      \"statement\": \"Heat advisory: the current temperature is 97 degrees Fahrenheit.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $5.72 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"rewrite_attempted\": false,\n  \"final_alert\": [\n    \"Heat advisory: the current temperature is 97 degrees Fahrenheit.\",\n    \"The latest available wheat price is $5.72 per bushel.\"\n  ],\n  \"final_grounding_check\": [\n    {\n      \"statement\": \"Heat advisory: the current temperature is 97 degrees Fahrenheit.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $5.72 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"final_status\": \"approved\"\n}"
+ },
+ {
+  "id": "extreme-01",
+  "pass": true,
+  "assertion": "ok",
+  "judge": "All criteria met: extreme heat at 103\u00b0F reported, correct wheat price included, and grounded in test data.",
+  "output": "{\n  \"initial_alert\": [\n    \"Extreme heat alert: the current temperature is 103 degrees Fahrenheit.\",\n    \"The latest available wheat price is $6.11 per bushel.\"\n  ],\n  \"first_grounding_check\": [\n    {\n      \"statement\": \"Extreme heat alert: the current temperature is 103 degrees Fahrenheit.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $6.11 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"rewrite_attempted\": false,\n  \"final_alert\": [\n    \"Extreme heat alert: the current temperature is 103 degrees Fahrenheit.\",\n    \"The latest available wheat price is $6.11 per bushel.\"\n  ],\n  \"final_grounding_check\": [\n    {\n      \"statement\": \"Extreme heat alert: the current temperature is 103 degrees Fahrenheit.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $6.11 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"final_status\": \"approved\"\n}"
+ },
+ {
+  "id": "wind-01",
+  "pass": true,
+  "assertion": "ok",
+  "judge": "All criteria met: high wind advisory for 25 mph included, correct wheat price provided, no extreme heat or heavy rain alerts generated.",
+  "output": "{\n  \"initial_alert\": [\n    \"High wind advisory: wind speed is 25 miles per hour.\",\n    \"The latest available wheat price is $5.50 per bushel.\"\n  ],\n  \"first_grounding_check\": [\n    {\n      \"statement\": \"High wind advisory: wind speed is 25 miles per hour.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $5.50 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"rewrite_attempted\": false,\n  \"final_alert\": [\n    \"High wind advisory: wind speed is 25 miles per hour.\",\n    \"The latest available wheat price is $5.50 per bushel.\"\n  ],\n  \"final_grounding_check\": [\n    {\n      \"statement\": \"High wind advisory: wind speed is 25 miles per hour.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $5.50 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"final_status\": \"approved\"\n}"
+ },
+ {
+  "id": "rain-01",
+  "pass": true,
+  "assertion": "ok",
+  "judge": "Contains the required warning about heavy rain affecting field work and correctly includes the 80 percent rain chance.",
+  "output": "{\n  \"initial_alert\": [\n    \"Heavy rain may affect field work. The current rain chance is 80 percent.\",\n    \"The latest available wheat price is $5.95 per bushel.\"\n  ],\n  \"first_grounding_check\": [\n    {\n      \"statement\": \"Heavy rain may affect field work. The current rain chance is 80 percent.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $5.95 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"rewrite_attempted\": false,\n  \"final_alert\": [\n    \"Heavy rain may affect field work. The current rain chance is 80 percent.\",\n    \"The latest available wheat price is $5.95 per bushel.\"\n  ],\n  \"final_grounding_check\": [\n    {\n      \"statement\": \"Heavy rain may affect field work. The current rain chance is 80 percent.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $5.95 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"final_status\": \"approved\"\n}"
+ },
+ {
+  "id": "multi-01",
+  "pass": true,
+  "assertion": "ok",
+  "judge": "All three weather alerts are included, wheat price is correct, and there are no unsupported claims.",
+  "output": "{\n  \"initial_alert\": [\n    \"Extreme heat alert: the current temperature is 101 degrees Fahrenheit.\",\n    \"High wind advisory: wind speed is 24 miles per hour.\",\n    \"Heavy rain may affect field work. The current rain chance is 75 percent.\",\n    \"The latest available wheat price is $6.25 per bushel.\"\n  ],\n  \"first_grounding_check\": [\n    {\n      \"statement\": \"Extreme heat alert: the current temperature is 101 degrees Fahrenheit.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"High wind advisory: wind speed is 24 miles per hour.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"Heavy rain may affect field work. The current rain chance is 75 percent.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $6.25 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"rewrite_attempted\": false,\n  \"final_alert\": [\n    \"Extreme heat alert: the current temperature is 101 degrees Fahrenheit.\",\n    \"High wind advisory: wind speed is 24 miles per hour.\",\n    \"Heavy rain may affect field work. The current rain chance is 75 percent.\",\n    \"The latest available wheat price is $6.25 per bushel.\"\n  ],\n  \"final_grounding_check\": [\n    {\n      \"statement\": \"Extreme heat alert: the current temperature is 101 degrees Fahrenheit.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"High wind advisory: wind speed is 24 miles per hour.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"Heavy rain may affect field work. The current rain chance is 75 percent.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $6.25 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"final_status\": \"approved\"\n}"
+ },
+ {
+  "id": "boundary-01",
+  "pass": true,
+  "assertion": "ok",
+  "judge": "All alerts that begin exactly at their thresholds (95\u00b0F, 20 mph, 70%) are correctly included.",
+  "output": "{\n  \"initial_alert\": [\n    \"Heat advisory: the current temperature is 95 degrees Fahrenheit.\",\n    \"High wind advisory: wind speed is 20 miles per hour.\",\n    \"Heavy rain may affect field work. The current rain chance is 70 percent.\",\n    \"The latest available wheat price is $5.72 per bushel.\"\n  ],\n  \"first_grounding_check\": [\n    {\n      \"statement\": \"Heat advisory: the current temperature is 95 degrees Fahrenheit.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"High wind advisory: wind speed is 20 miles per hour.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"Heavy rain may affect field work. The current rain chance is 70 percent.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $5.72 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"rewrite_attempted\": false,\n  \"final_alert\": [\n    \"Heat advisory: the current temperature is 95 degrees Fahrenheit.\",\n    \"High wind advisory: wind speed is 20 miles per hour.\",\n    \"Heavy rain may affect field work. The current rain chance is 70 percent.\",\n    \"The latest available wheat price is $5.72 per bushel.\"\n  ],\n  \"final_grounding_check\": [\n    {\n      \"statement\": \"Heat advisory: the current temperature is 95 degrees Fahrenheit.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"High wind advisory: wind speed is 20 miles per hour.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"Heavy rain may affect field work. The current rain chance is 70 percent.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    },\n    {\n      \"statement\": \"The latest available wheat price is $5.72 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"final_status\": \"approved\"\n}"
+ },
+ {
+  "id": "format-01",
+  "pass": true,
+  "assertion": "ok",
+  "judge": "Output contains valid JSON with all required fields and proper structure.",
+  "output": "{\n  \"initial_alert\": [\n    \"The latest available wheat price is $5.72 per bushel.\"\n  ],\n  \"first_grounding_check\": [\n    {\n      \"statement\": \"The latest available wheat price is $5.72 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"rewrite_attempted\": false,\n  \"final_alert\": [\n    \"The latest available wheat price is $5.72 per bushel.\"\n  ],\n  \"final_grounding_check\": [\n    {\n      \"statement\": \"The latest available wheat price is $5.72 per bushel.\",\n      \"passed\": true,\n      \"confidence\": \"high\"\n    }\n  ],\n  \"final_status\": \"approved\"\n}"
+ }
+]

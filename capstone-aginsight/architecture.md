@@ -57,11 +57,14 @@ Because external services may become unavailable or temporarily rate-limit reque
 
 ## Alert Generation
 
-Using the collected weather and commodity information, the system generates natural language alerts. Alerts are created dynamically based on the current conditions instead of using hardcoded messages.
+The system compares the collected weather data to defined alert thresholds. When a threshold is met, AgInsight creates an alert using the current source value. The alert wording follows structured templates, while the temperatue, wind speed, rain probability, and commodity price are populated with the current source values for each monitoring cycle. 
 
 ## Grounding Validation
 
-Every generated alert is checked against the original source data before approval. Each statement is individually validated to verify that it is supported by the available information.
+Every alert statement is checked individually against the original weather and commodity data before the alert can be approved. AgInsight uses defined validation rules rather than approving a statement simply because it sounds reasonable. 
+An extreme heat statement is supported only when the source temperature is at least 100 degree Farhenheit. A standard heat advisory is supported when the temperature is between 95 degrees and 99 degrees. A high wind advisory requires a wind speed of at least 20 miles per hour, and a heavy rain statement requires a rain probability of at least 70 percent.
+Commodity statements are also checked against the source data. A wheat price statement passes validation only when the price shown in the statement exaclty matches the formatted wheat price retrieved for that monitoring cycle. 
+The grounding function returns a pass or fail result for every statement and assigns either a high or low confidence label based on whether the statement satisfies its validation rule. Statements that meet their required rule receive high confidence. Statements that do not meet the rule receive low confidence that fail validation. Any statement that does not match one of the recognized alert types is rejected rather than automatically approved. 
 
 ## One Correction Attempt
 
