@@ -99,3 +99,14 @@ The main prompts I used focused on understanding the evaluation harness, creatin
 The AI was not correct every time. Some early instructions changed more of my capstone than necessary, and the first judge criteria caused two correct outputs to fail. I reviewed the code, checked the outputs myself, corrected the judge criteria, and reran the evaluation until the results matched my own labels.
 
 I verified the final result by running the full local sweep, reviewing `last_run.json`, checking that all eight cases passed, confirming the green GitHub Actions run, creating a deliberate broken run, and restoring the repository to a passing state.
+
+## Future Evaluation Improvements
+
+The current evaluation suite focuses on representative scenarios that verify AgInsight's primary workflow. As the project continues to develop, the evaluation suite will be expanded to provide broader coverage and stronger confidence in system behavior.
+
+Planned improvements include:
+
+- Adding intentionally failing test cases to verify that the calibrated LLM judge is not overly permissive.
+- Expanding the evaluation suite beyond the current representative scenarios to include additional weather patterns, commodity market conditions, and API edge cases.
+- Adding refusal and malformed input cases, including missing weather fields, corrupted API responses, invalid numeric values, and conflicting data between sources.
+- Creating more agent-focused failure cases that verify AgInsight correctly rejects unsupported alerts, prevents hallucinated recommendations, and safely handles simultaneous failures across multiple data sources.

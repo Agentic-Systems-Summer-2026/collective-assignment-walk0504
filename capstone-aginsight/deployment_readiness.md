@@ -77,6 +77,7 @@ A production deployment would require:
 - Automated alert delivery (email, SMS, or mobile notifications)
 - Continuous regression testing before deployment
 
+Before production development, the evaluation suite should be expanded with additional positive and negative cases, including intentionally failing scenarious that continuously verify both the agent behavior and the reliability of the LLM judge. 
 ---
 
 ## Overall Readiness
