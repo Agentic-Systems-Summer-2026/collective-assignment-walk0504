@@ -42,7 +42,7 @@ The AgInsight prototype was evaluated using multiple weather scenarios to verify
 
 ## Evaluation Summary
 
-These early evaluation scenarios confirmed that AgInsight responded correctly to different weather conditions and that the grounding validation removed unsupported statements before alerts were approved. As the project developed, the evaluation process expanded into a repeatable eight-case evaluation harness with defined metrics and automated regression testing. The Build 4 evaluation below represents the final evaluation approach for the project.
+These early evaluation scenarios confirmed that AgInsight responded correctly to different weather conditions and that the grounding validation removed unsupported statements before alerts were approved. As the project developed, the evaluation process expanded into repeatable eight-case evaluation harness with defined metrics and automated regression testing. This final demo also integrates the OU LiteLLM Sandbox to generate a farmer-friendly summary only after the alert has passed grounding validation. This keeps the LLM from introducing unsupported information while still providing a readable summary for the user. 
 
 ## Build 4 Evaluation
 
@@ -62,6 +62,7 @@ The final local sweep passed 8 out of 8 cases for a 100% pass rate. The required
 - CI live sweep size: 5 cases
 - Green GitHub Actions run: Passed
 - Deliberately broken GitHub Actions run: Failed as expected
+- Demo runs against: OU LiteLLM Sandbox (Qwen3 Coder 30B)
 
 ## Judge Calibration
 
@@ -91,9 +92,9 @@ I first pushed the working version and confirmed that the GitHub Actions run pas
 
 ## AI Delegation Log
 
-I used ChatGPT to help me understand the starter harness, connect it to my AgInsight project, create the first draft of the evaluation cases, and troubleshoot Python indentation and GitHub Actions errors.
+I used ChatGPT as a development assistant throughout this project. It helped me understand the starter harness, troubleshoot Python and GitHub Action issues, explain concepts I was unfamiliar with, brainstorm evaluation cases, and integrate the shared OU LiteLLM Sandbox client into the final demo. I used its suggestions as a starting point, then modified, tested, and verified the code until it worked correctly with my AgInsight project. 
 
-The main prompts I used asked how to connect the harness to my capstone, how to create AgInsight-specific test cases, how to understand failed judge results, and how to fix the missing `requests` package in GitHub Actions.
+The main prompts I used focused on understanding the evaluation harness, creating AgInsight-specific test cases, interpreting failed judge results, integrating the shared OU LiteLLM Sandbox client, improving the final demo, and resolving isses such as the missing requests package in GitHub Actions. 
 
 The AI was not correct every time. Some early instructions changed more of my capstone than necessary, and the first judge criteria caused two correct outputs to fail. I reviewed the code, checked the outputs myself, corrected the judge criteria, and reran the evaluation until the results matched my own labels.
 

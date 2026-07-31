@@ -5,6 +5,20 @@ from pathlib import Path
 
 import requests
 
+import sys
+
+sys.path.insert(
+    0,
+    str(Path(__file__).resolve().parents[1])
+)
+
+from common.llm import (
+    DEFAULT_MODEL,
+    PROVIDER,
+    STATS,
+    chat
+)
+
 
 # ---------------------------------------------------------
 # 1. LIVE WEATHER DATA WITH FALLBACK
@@ -273,7 +287,59 @@ def rewrite_alert(checked_statements):
 
     return corrected_statements
 
+# ---------------------------------------------------------
+# 5. CREATE A FARMER-FRIENDLY MODEL SUMMARY
+# ---------------------------------------------------------
 
+def create_farmer_summary(final_alert):
+    """
+    Uses the configured model provider to turn approved alert statements
+    into one short farmer-friendly summary.
+
+    Only grounded, approved statements are sent to the model.
+    If the model call fails, the workflow continues with a safe fallback.
+    """
+
+    approved_facts = "\n".join(
+        f"- {statement}" for statement in final_alert
+    )
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are AgInsight, a trustworthy farm monitoring assistant. "
+                "Rewrite only the approved facts provided by the user into a clear summary. "
+                "Do not add recommendations, predictions, explanations, or new information. "
+                "If information is not explicitly provided, do not mention it. "
+                "Use no more than three short sentences."
+            )
+        },
+        {
+            "role": "user",
+            "content": (
+                "Create a farmer-friendly summary from these approved facts:\n"
+                f"{approved_facts}"
+            )
+        }
+    ]
+
+    try:
+        return chat(
+            messages,
+            model=DEFAULT_MODEL,
+            max_tokens=150,
+            temperature=0,
+            cache=False,
+            timeout=60,
+            retries=2
+        ).strip()
+
+    except RuntimeError as error:
+        print(f"\nModel summary unavailable: {error}")
+        print("Using the approved alert statements as the safe fallback.")
+
+        return " ".join(final_alert)
 # ---------------------------------------------------------
 # 5. SAVE AN OBSERVABILITY LOG
 # ---------------------------------------------------------
@@ -430,7 +496,19 @@ def main():
     )
 
     print(f"\nFINAL STATUS: {final_status}")
+    print("\nMODEL CONNECTION")
+    print(f"Provider: {PROVIDER}")
+    print(f"Model: {DEFAULT_MODEL}")
 
+    farmer_summary = create_farmer_summary(final_alert)
+
+    print("\nFARMER-FRIENDLY MODEL SUMMARY")
+    print(farmer_summary)
+
+    print("\nMODEL USAGE")
+    print(f"Calls: {STATS['calls']}")
+    print(f"Tokens: {STATS['tokens']}")
+    print(f"Cache hits: {STATS['cache_hits']}")
     save_log(
         weather_data,
         commodity_data,
