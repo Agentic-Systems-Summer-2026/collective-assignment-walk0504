@@ -38,6 +38,8 @@ Each monitoring cycle follows the same sequence:
 
 AgInsight validates every alert statement before it is approved. Each statement is compared against the original weather or commodity data used to generate the alert.
 
+AgInsight removes only unsupported statements rather than rejecting the entire alert. This allows important validated information, such as severe weather conditions, to still reach the user while preventing unsupported claims from being included. 
+
 The system checks:
 
 - Extreme heat alerts only if the temperature is at least 100°F.

@@ -110,3 +110,4 @@ Planned improvements include:
 - Expanding the evaluation suite beyond the current representative scenarios to include additional weather patterns, commodity market conditions, and API edge cases.
 - Adding refusal and malformed input cases, including missing weather fields, corrupted API responses, invalid numeric values, and conflicting data between sources.
 - Creating more agent-focused failure cases that verify AgInsight correctly rejects unsupported alerts, prevents hallucinated recommendations, and safely handles simultaneous failures across multiple data sources.
+-When fallback weather or commodity data is used, AgInsight will clearly label the alert so users know the information came from a backup source rather than the primary API

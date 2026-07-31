@@ -215,6 +215,15 @@ Future development will include:
 
 ---
 
+## Design Decisions
+
+AgInsight was designed to prioritize trustworthy AI over simply generating alerts as quickly as possible.
+
+- Every generated statement is validated against the original source data before it can be approved.
+- Unsupported statements are removed individually instead of rejecting the entire alert. This allows important verified information, such as severe weather conditions, to still reach the user while preventing unsupported claims from being included.
+- Every monitoring cycle is recorded in observability logs, including the data sources, validation results, and final approval status.
+- The observability log records whether primary or fallback data was used during each monitoring cycle. A future improvement is to also display that information directly in the farmer-facing alert to provide additional transparency. 
+
 # 10. Conclusion
 
 AgInsight demonstrates how an agentic AI system can improve trust in automated agricultural decision support by validating its own output before presenting information to the user.
