@@ -133,11 +133,11 @@ def get_live_commodity_prices():
         for observation in observations:
             value = observation.get("value")
 
-            if value not in (None, "."):
-                return {
-                    "value": float(value),
-                    "date": observation.get("date", "unknown")
-                }
+            return {
+                "value": float(value),
+                "date": observation.get("date", "unknown"),
+                "unit": payload.get("unit", "unit unavailable")
+}
 
         raise ValueError(
             f"No usable observations returned for {function_name}."
@@ -145,15 +145,13 @@ def get_live_commodity_prices():
 
     try:
         wheat = fetch_latest("WHEAT")
-        corn = fetch_latest("CORN")
 
         return {
-            "wheat_price": wheat["value"],
-            "corn_price": corn["value"],
-            "wheat_date": wheat["date"],
-            "corn_date": corn["date"],
-            "data_source": "Alpha Vantage global commodity data"
-        }
+        "wheat_price": wheat["value"],
+        "wheat_unit": wheat["unit"],
+        "wheat_date": wheat["date"],
+        "data_source": "Alpha Vantage global commodity data"
+    }
 
     except (
         requests.RequestException,
