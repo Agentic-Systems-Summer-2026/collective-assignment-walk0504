@@ -170,6 +170,7 @@
     .gate .ok { color: var(--green); }
     .gate .err { color: var(--red); }
     .gate .warn { color: var(--amber); }
+    .gate-divider { text-align: center; color: var(--muted); font-size: 0.78rem; margin: 1rem 0 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
 
     /* Nickname editing inside saved items */
     .saved-item .nick { flex: 1; display: flex; align-items: center; gap: 0.3rem; min-width: 0; }
@@ -209,16 +210,20 @@
   <section>
     <div class="container">
       <h2>🗺️ Select &amp; Monitor Locations</h2>
-      <p class="lead">Your saved locations stay locked on every visit. Enter your password to pull them up, then add, edit, and monitor them as usual.</p>
+      <p class="lead">Start fresh to set new locations, or enter your password to pull up the ones you've saved before.</p>
 
       <div class="gate" id="locGate">
-        <h4>🔒 Locations are locked</h4>
-        <p class="hint">Each time you open this link, your saved locations stay hidden until you enter your password.</p>
+        <h4>🌱 Welcome to your locations</h4>
+        <p class="hint">New here? Start fresh and set your locations first. Returning? Enter your password to pull up the ones you saved before.</p>
+
         <div class="pw-row">
-          <input id="gatePw" type="password" placeholder="Type your password" autocomplete="off" />
-          <button class="btn" id="btnUnlock">🔓 Pull up locations</button>
+          <input id="gatePw" type="password" placeholder="Returning user — enter your password" autocomplete="off" />
+          <button class="btn" id="btnUnlock">🔓 Pull up saved locations</button>
         </div>
         <div class="status" id="gateStatus"></div>
+
+        <div class="gate-divider">or</div>
+        <button class="btn ghost" id="btnStartFresh" style="width:100%;">＋ New here — start with a clean slate</button>
       </div>
 
       <div id="locArea" style="display:none">
@@ -744,6 +749,16 @@
       setTimeout(() => map.invalidateSize(), 50);
     }
 
+    // New user — skip the password and start with an empty slate.
+    function startFresh() {
+      locations = [];
+      saveLocations();
+      hideGate();
+      renderMarkers();
+      renderSavedList();
+      setGateStatus('Nothing saved yet. Add your locations below and press 💾 Save to keep them for next time.', 'warn');
+    }
+
     async function unlockLocations() {
       const pw = document.getElementById('gatePw').value;
       setGateStatus('');
@@ -815,11 +830,12 @@
     document.getElementById('vaultPw').addEventListener('keydown', (e) => { if (e.key === 'Enter') saveToVault(); });
     document.getElementById('btnUnlock').addEventListener('click', () => unlockLocations());
     document.getElementById('gatePw').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlockLocations(); });
+    document.getElementById('btnStartFresh').addEventListener('click', startFresh);
 
     showGate();
     renderMarkers();
     renderSavedList();
-    setGateStatus('Enter your password to pull up your saved locations.', '');
+    setGateStatus('', '');
   </script>
 </body>
 </html>

@@ -21,9 +21,12 @@ the correct password, which then pulls the locations up (from the encrypted vaul
 
 ### New behavior
 - **Page load:** locations are no longer auto-rendered, and the default pin is no longer
-  seeded. A 🔒 panel ("Locations are locked — enter your password to pull up your saved
-  locations") is shown instead; the map, search bar, saved-locations list, and monitor
-  area are hidden behind it.
+  seeded. A gate panel is shown instead; the map, search bar, saved-locations list, and
+  monitor area are hidden behind it. The gate offers two clear paths:
+  - **Returning user:** enter your password and press "🔓 Pull up saved locations" to
+    decrypt and display the locations saved under that password.
+  - **New user:** press "＋ New here — start with a clean slate" to skip the password and
+    start with an empty set of locations.
 - **Unlock:** looks up the encrypted vault (local encrypted cache first, then the cloud
   Netlify function), decrypts it with the password-derived key (PBKDF2 + AES-GCM), and
   renders the saved locations + nicknames.
@@ -102,3 +105,11 @@ password (add locations → 💾 Save) so future visits can pull them up.
 5. Reload the page → confirm gate reappears; enter the same password → confirm the
    saved location(s) + nickname are pulled up.
 6. Enter a wrong/different password → confirm it does not reveal data.
+
+### Two-path gate checklist (new-user vs returning-user)
+1. Open the production URL on a clean browser → gate shows both options.
+2. Click "＋ New here — start with a clean slate" → unlocks with an empty saved list,
+   no password required; add a location and press 💾 Save.
+3. Reload → gate reappears → enter that same password → saved location(s) are pulled up.
+4. On a fresh browser, click "＋ New here" again → confirm it does NOT auto-load any
+   previously saved locations (starts empty).
