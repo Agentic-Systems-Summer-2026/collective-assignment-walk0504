@@ -176,6 +176,13 @@
     .comm-checks label.checked { background: var(--green-light); border-color: var(--green); }
     .comm-checks input { accent-color: var(--green); }
 
+    /* Field guidance + outlook blocks inside monitor cards */
+    .field-notes { margin-top: 0.9rem; padding: 0.7rem 0.9rem; border-top: 1px dashed rgba(255,255,255,0.18); }
+    .field-notes .fn-title { color: #b8e8b2; font-family: system-ui, sans-serif; font-size: 0.92rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .field-notes .fn-line, .field-notes .fn-item { color: #d7f0d2; font-size: 0.88rem; line-height: 1.55; }
+    .field-notes .fn-item { margin-bottom: 0.3rem; }
+    .field-notes .fn-item b { color: #8fc98a; }
+
     /* Nickname editing inside saved items */
     .saved-item .nick { flex: 1; display: flex; align-items: center; gap: 0.3rem; min-width: 0; }
     .saved-item .nick input {
@@ -436,7 +443,21 @@
       if (valid.length) selectedCommodities = valid;
       renderCommodityChecks();
     }
-    const FALLBACK = { temperature_f: 96, rain_chance_percent: 15, wind_speed_mph: 13, data_source: 'fallback' };
+    const FALLBACK = {
+      temperature_f: 96, humidity_percent: 42, wind_speed_mph: 13,
+      rain_chance_percent: 15, soil_temp_f: 92, soil_moist: 0.18,
+      temp_min_f: 72, soil_source: 'fallback',
+      daily: {
+        time: ['d1','d2','d3','d4','d5','d6','d7'],
+        temperature_2m_max: [98,99,97,96,95,94,93],
+        temperature_2m_min: [72,73,71,70,69,68,68],
+        precipitation_sum: [0,0,0,0.2,0,0,0],
+        precipitation_probability_max: [10,10,10,40,10,5,5],
+        relative_humidity_2m_max: [55,60,58,70,50,45,42]
+      },
+      precip7: 0.2, max7: [98,99,97,96,95,94,93],
+      data_source: 'fallback'
+    };
 
     // Seed with Weatherford, OK so the page isn't empty.
     const DEFAULT_LOCS = [
@@ -618,14 +639,50 @@
     const monitorsLead = document.getElementById('monitorsLead');
 
     async function fetchWeather(loc) {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,wind_speed_10m&daily=precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=1`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('weather api error');
-      const d = await res.json();
+      const base = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}`;
+      const weatherUrl = base +
+        `&current=temperature_2m,relative_humidity_2m,wind_speed_10m` +
+        `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,relative_humidity_2m_max` +
+        `&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=7`;
+      const soilUrl = base +
+        `&current=soil_temperature_0_to_7cm,soil_moisture_0_to_7cm&models=ecmwf_ifs025&temperature_unit=fahrenheit`;
+
+      const [wRes, sRes] = await Promise.all([fetch(weatherUrl), fetch(soilUrl)]);
+      if (!wRes.ok) throw new Error('weather api error');
+      const w = await wRes.json();
+      const c = w.current || {};
+      const daily = w.daily || {};
+
+      let soil = { soil_temp_f: null, soil_moist: null, soil_source: 'unavailable' };
+      try {
+        if (sRes.ok) {
+          const s = await sRes.json();
+          const sc = s.current || {};
+          if (sc.soil_temperature_0_to_7cm != null && sc.soil_moisture_0_to_7cm != null) {
+            soil = {
+              soil_temp_f: Math.round(sc.soil_temperature_0_to_7cm),
+              soil_moist: sc.soil_moisture_0_to_7cm,
+              soil_source: 'ECMWF IFS (live)'
+            };
+          }
+        }
+      } catch (e) {}
+
+      const sum7 = (daily.precipitation_sum || []).reduce((a, b) => a + (Number(b) || 0), 0);
+      const max7 = (daily.temperature_2m_max || []).map(v => Math.round(v));
+
       return {
-        temperature_f: Math.round(d.current.temperature_2m),
-        rain_chance_percent: Math.round(d.daily.precipitation_probability_max[0]),
-        wind_speed_mph: Math.round(d.current.wind_speed_10m),
+        temperature_f: Math.round(c.temperature_2m),
+        humidity_percent: c.relative_humidity_2m != null ? Math.round(c.relative_humidity_2m) : null,
+        wind_speed_mph: Math.round(c.wind_speed_10m),
+        rain_chance_percent: daily.precipitation_probability_max && daily.precipitation_probability_max[0] != null ? Math.round(daily.precipitation_probability_max[0]) : null,
+        temp_min_f: daily.temperature_2m_min && daily.temperature_2m_min[0] != null ? Math.round(daily.temperature_2m_min[0]) : null,
+        soil_temp_f: soil.soil_temp_f,
+        soil_moist: soil.soil_moist,
+        soil_source: soil.soil_source,
+        daily: daily,
+        precip7: sum7,
+        max7: max7,
         data_source: 'Open-Meteo API (live)'
       };
     }
@@ -640,6 +697,80 @@
       prices.forEach(p => alerts.push(`${p.name} price (local): $${p.price.toFixed(2)}/${p.unit}`));
       const held = w.data_source === 'fallback' || alerts.length <= 1; // only price lines = nothing actionable
       return { alerts, held, w, prices };
+    }
+
+    // Farm-level guidance (field notes) + 7-day outlook.
+    function workabilityNote(w) {
+      const m = w.soil_moist;
+      if (m == null) return 'Soil data unavailable — unable to judge compaction risk.';
+      if (m < 0.12) return 'Dry — low compaction risk, but crops may be short on moisture.';
+      if (m < 0.18) return 'On the dry side — workable; watch if it trends wetter.';
+      if (m < 0.28) return 'Good soil moisture — favorable window for fieldwork.';
+      if (m < 0.38) return 'Wet — working it risks compaction; delay if more rain is expected.';
+      return 'Saturated — do not work; high risk of rutting and compaction.';
+    }
+
+    function rainNote(w) {
+      const enough = w.soil_moist != null ? (w.soil_moist >= 0.25) : (w.precip7 >= 0.5);
+      const coming = (w.rain_chance_percent != null && w.rain_chance_percent >= 50) || (w.precip7 >= 0.6);
+      let text = enough
+        ? 'Soil holds decent moisture from recent rain.'
+        : 'Soil is on the dry side — recent rain has been limited.';
+      text += coming ? ' More rain is in the forecast.' : ' Little rain in the near-term forecast.';
+      return text;
+    }
+
+    function frostNote(w) {
+      const mins = (w.daily && w.daily.temperature_2m_min) || [];
+      const tonight = mins[0] != null ? Math.round(mins[0]) : w.temp_min_f;
+      const tomorrow = mins[1] != null ? Math.round(mins[1]) : null;
+      if (tonight != null && tonight < 32) return `FROST RISK — low of ${tonight}°F tonight. Protect sensitive crops.`;
+      if (tomorrow != null && tomorrow < 32) return `Frost possible tomorrow (low ${tomorrow}°F).`;
+      if (tonight != null && tonight < 36) return `Near-freezing low of ${tonight}°F tonight — patchy frost possible.`;
+      return 'No frost risk in the next few days.';
+    }
+
+    function farmNoteLines(w) {
+      const lines = [];
+      lines.push(`<div class="fn-item"><b>Enough rain?</b> ${rainNote(w)}</div>`);
+      lines.push(`<div class="fn-item"><b>Workable without compaction?</b> ${workabilityNote(w)}</div>`);
+      lines.push(`<div class="fn-item"><b>Frost risk:</b> ${frostNote(w)}</div>`);
+      if (w.humidity_percent != null) {
+        const h = w.humidity_percent;
+        const tag = h >= 65 ? ' — muggy' : h < 25 ? ' — very dry air' : '';
+        lines.push(`<div class="fn-item"><b>Humidity now:</b> ${h}%${tag}.</div>`);
+      }
+      return lines.join('');
+    }
+
+    function outlookLines(w) {
+      const d = w.daily || {};
+      const max7 = w.max7 || [];
+      const sum7 = w.precip7 || 0;
+      const humMax = (d.relative_humidity_2m_max || []).map(v => Math.round(v));
+      const avgHum = humMax.length ? Math.round(humMax.reduce((a, b) => a + b, 0) / humMax.length) : null;
+
+      const heatDays = [];
+      max7.forEach((v, i) => {
+        if (v >= 98) heatDays.push((d.time && d.time[i]) ? d.time[i].slice(5) + ' (' + v + '°F)' : v + '°F');
+      });
+      const rainDays = [];
+      (d.precipitation_sum || []).forEach((v, i) => {
+        if (Number(v) >= 0.25) rainDays.push((d.time && d.time[i]) ? d.time[i].slice(5) : (i + 1));
+      });
+
+      const soaking = sum7 >= 1.5;
+      const drought = sum7 < 0.15 && max7.length > 0;
+
+      const lines = [];
+      if (soaking) lines.push('Week of soaking rain coming — expect soggy fields; plan fieldwork around it.');
+      else if (rainDays.length) lines.push('Rain expected on ' + rainDays.join(', ') + ' — some heavier totals.');
+      else lines.push('Dry outlook — little meaningful rain in the next 7 days.');
+      if (drought) lines.push('Drought signal: under 0.15" of rain forecast for the week; watch irrigation needs.');
+      if (heatDays.length) lines.push('Temps to reach upper 90s+ on: ' + heatDays.slice(0, 4).join(', '));
+      if (avgHum != null) lines.push('Typical daytime humidity this week: ~' + avgHum + '%.');
+      lines.push('7-day forecast rain total: ' + sum7.toFixed(2) + '"');
+      return lines;
     }
 
     function renderMonitorCard(loc) {
@@ -673,12 +804,21 @@
       } catch (e) { /* fallback */ }
 
       const { alerts, held, prices } = buildCycle(w, loc);
+      const notes = farmNoteLines(w);
+      const oLines = outlookLines(w);
+      const moistPct = w.soil_moist != null ? (w.soil_moist * 100).toFixed(0) + '%' : 'n/a';
+
       let html = `<div class="row"><span class="label">Location</span><span class="value">${escapeHtml(dispLabel(loc))}${loc.nick ? ' <span style="opacity:.6">(' + escapeHtml(loc.name) + ')</span>' : ''}</span></div>`;
       html += `<div class="row"><span class="label">Commodities (local)</span><span class="value" style="font-weight:normal;">${prices.map(p => `${escapeHtml(p.name)} $${p.price.toFixed(2)}/${p.unit}`).join('<br/>')}</span></div>`;
-      html += `<div class="row"><span class="label">Temperature</span><span class="value">${w.temperature_f} °F</span></div>`;
+      html += `<div class="row"><span class="label">Air Temp</span><span class="value">${w.temperature_f} °F</span></div>`;
+      html += `<div class="row"><span class="label">Humidity</span><span class="value">${w.humidity_percent != null ? w.humidity_percent + ' %' : 'n/a'}</span></div>`;
+      html += `<div class="row"><span class="label">Soil Temp (3\")</span><span class="value">${w.soil_temp_f != null ? w.soil_temp_f + ' °F' : 'n/a'}</span></div>`;
+      html += `<div class="row"><span class="label">Soil Moisture</span><span class="value">${moistPct} (v/v)${w.soil_source !== 'unavailable' ? ' · ' + escapeHtml(w.soil_source) : ''}</span></div>`;
       html += `<div class="row"><span class="label">Wind Speed</span><span class="value">${w.wind_speed_mph} mph</span></div>`;
-      html += `<div class="row"><span class="label">Rain Chance</span><span class="value">${w.rain_chance_percent} %</span></div>`;
+      html += `<div class="row"><span class="label">Rain Chance (today)</span><span class="value">${w.rain_chance_percent != null ? w.rain_chance_percent + ' %' : 'n/a'}</span></div>`;
       html += `<div class="row"><span class="label">Data Source</span><span class="value">${escapeHtml(w.data_source)}</span></div>`;
+      html += `<div class="field-notes"><div class="fn-title">🌾 Field Guidance</div>${notes}</div>`;
+      html += `<div class="field-notes"><div class="fn-title">📅 7-Day Outlook</div>${oLines.map(l => `<div class="fn-line">• ${l}</div>`).join('')}</div>`;
       html += `<div class="row"><span class="label">Validated Alerts</span><span class="value" style="font-weight:normal;white-space:pre-line;">${alerts.join('\n')}</span></div>`;
       html += `<div class="row"><span class="label">Status</span><span class="value">${held ? '<span class="status-pill pill-warn">● HELD</span>' : '<span class="status-pill pill-ok">● APPROVED</span>'}</span></div>`;
 

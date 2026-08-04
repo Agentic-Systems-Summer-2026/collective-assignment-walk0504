@@ -45,6 +45,25 @@ Users can now **select which commodity** to include in every monitoring cycle:
 - The selection is **persisted in the password vault** (saved/restored with the locations), so a returning user gets their commodity back on unlock.
 - Prices are labeled sample/demo constants (front-end has no Alpha Vantage key); the backend `capstone-aginsight/main.py` fetches live wheat via Alpha Vantage when a key is present.
 
+## Multi-commodity + regional prices + Cow/Calf (added 2026-08-04)
+
+- **Multi-select:** checkbox chips replace the single dropdown — pick as many commodities as wanted. Saved/restored in the vault (`parsed.commodities`).
+- **Location-based (regional) prices:** each farm's monitor card computes a deterministic demo price from its lat/lon (`regionalPrice`), so the same farm always shows the same local price and different farms differ slightly (labeled "regional (sample)").
+- **Cow/Calf added** to `COMMODITIES` (cattle, $1.80/lb).
+
+## Farm conditions: soil, moisture, frost, outlook, humidity (added 2026-08-04)
+
+Each monitor card now also reports and interprets:
+- **Air temp + Humidity** (current `relative_humidity_2m` + per-day max).
+- **Soil temperature & soil moisture** — fetched from Open-Meteo's `ecmwf_ifs025` model (`soil_temperature_0_to_7cm`, `soil_moisture_0_to_7cm`, reported as % v/v). Falls back to "unavailable" if null.
+- **🌾 Field Guidance** block answers: enough rain?, workable without compaction?, frost risk, humidity note.
+  - Compaction: soil moisture < ~0.28 v/v workable; wetter → compaction risk.
+  - Frost: min temp tonight/tomorrow < 32°F → frost risk.
+- **📅 7-Day Outlook** block answers: drought developing (7-day precip < 0.15"), a week of soaking rain (≥ 1.5"), temps reaching upper 90s+ (≥ 98°F), typical daytime humidity.
+- Weather integration: default Open-Meteo model (local tz, °F, inches, 7-day) + ECMWF IFS for soil, fetched in parallel via `Promise.all`.
+
+Heuristics are clearly labeled demo/sample guidance — not a substitute for on-farm instruments.
+
 ## Files changed
 
 | File | Change |
