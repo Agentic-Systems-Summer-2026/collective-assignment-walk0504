@@ -178,6 +178,16 @@
     .comm-checks input { accent-color: var(--green); }
     .comm-block { background: var(--card); border-radius: 12px; padding: 1.2rem 1.4rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-top: 1rem; }
     .comm-block h4 { color: var(--green-dark); margin-bottom: 0.8rem; }
+    /* Grounding check badges (inside monitor cards) */
+    .ground { margin-top: 0.9rem; padding: 0.7rem 0.9rem; border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; }
+    .ground .g-title { color: #b8e8b2; font-family: system-ui, sans-serif; font-size: 0.92rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .ground .g-row { display: flex; justify-content: space-between; gap: 0.6rem; padding: 0.35rem 0; border-bottom: 1px dashed rgba(255,255,255,0.12); font-size: 0.88rem; color: #d7f0d2; flex-wrap: wrap; }
+    .ground .g-row:last-child { border-bottom: none; }
+    .ground .g-badge { font-weight: 600; white-space: nowrap; }
+    .ground .g-row.ok .g-badge { color: #7fe39a; }
+    .ground .g-row.est .g-badge { color: #f0c04a; }
+    .ground .g-row.warn .g-badge { color: #f08a8a; }
+    .ground .g-note { color: #8fc98a; font-size: 0.8rem; flex-basis: 100%; }
     .saved-list { margin-top: 1rem; }
     #map { width: 100%; }
 
@@ -754,6 +764,27 @@
       return 'No frost risk in the next few days.';
     }
 
+    // Grounding check: prove each reported value traces to its live source, and
+    // honestly flag estimates / unavailable readings.
+    function groundingBlock(w) {
+      const live = w.data_source !== 'fallback';
+      const row = (label, kind, note) => {
+        const cls = kind === 'ok' ? 'ok' : (kind === 'est' ? 'est' : 'warn');
+        const badge = kind === 'ok' ? '✅ Verified' : (kind === 'est' ? '🟠 Estimate' : '⚠️ Unavailable');
+        return `<div class="g-row ${cls}"><span>${label}</span><span class="g-badge">${badge}</span><span class="g-note">${note}</span></div>`;
+      };
+      const soilOk = w.soil_source !== 'unavailable' && w.soil_temp_f != null && w.soil_moist != null;
+      return `<div class="ground"><div class="g-title">🛡️ Grounding check — is each value verified?</div>`
+        + row('Air temperature', live && w.temperature_f != null ? 'ok' : 'est', 'From live weather feed')
+        + row('Humidity', live && w.humidity_percent != null ? 'ok' : 'est', 'From live weather feed')
+        + row('Ground temperature', soilOk ? 'ok' : (w.soil_temp_f != null ? 'est' : 'warn'), soilOk ? 'From live soil model' : 'No live soil reading right now')
+        + row('Ground moisture', soilOk ? 'ok' : (w.soil_moist != null ? 'est' : 'warn'), soilOk ? 'From live soil model' : 'No live soil reading right now')
+        + row('Wind speed', live && w.wind_speed_mph != null ? 'ok' : 'est', 'From live weather feed')
+        + row('Chance of rain', live && w.rain_chance_percent != null ? 'ok' : 'est', 'From live forecast')
+        + row('Your crops (price)', 'est', 'Local estimate — not a live market feed')
+        + `</div>`;
+    }
+
     function farmNoteLines(w) {
       const lines = [];
       lines.push(`<div class="fn-item"><b>Enough rain?</b> ${rainNote(w)}</div>`);
@@ -844,6 +875,7 @@
       html += `<div class="row"><span class="label">Info status</span><span class="value">${live ? 'Some readings are estimates (live weather off)' : 'Live weather &amp; ground data'}</span></div>`;
       html += `<div class="field-notes"><div class="fn-title">🌾 What this means for you</div>${notes}</div>`;
       html += `<div class="field-notes"><div class="fn-title">📅 The week ahead</div>${oLines.map(l => `<div class="fn-line">• ${l}</div>`).join('')}</div>`;
+      html += groundingBlock(w);
       html += `<div class="row"><span class="label">Validated alerts</span><span class="value" style="font-weight:normal;white-space:pre-line;">${alerts.join('\n')}</span></div>`;
       html += `<div class="row"><span class="label">Status</span><span class="value">${held ? '<span class="status-pill pill-warn">● HELD</span>' : '<span class="status-pill pill-ok">● APPROVED</span>'}</span></div>`;
 
