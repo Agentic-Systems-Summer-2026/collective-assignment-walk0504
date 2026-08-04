@@ -56,6 +56,7 @@
     section p.lead { color: var(--muted); margin-bottom: 1rem; }
 
     .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; }
+    .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.25rem; max-width: 900px; margin: 0 auto; }
 
     .card {
       background: var(--card); border-radius: 12px; padding: 1.4rem 1.6rem;
@@ -200,10 +201,30 @@
   <header class="hero">
     <div class="container">
       <h1>🌱 AgInsight</h1>
-      <p class="tag">A trustworthy AI farm monitoring agent that validates every alert against its source data before approval.</p>
+      <p class="tag">A simple, trustworthy farm outlook. We check the weather, soil, and market data for your farms and tell you the honest answer in plain language — no computer science required.</p>
       <span class="badge">Capstone · Agentic Systems · Multi-Farm Monitoring</span>
     </div>
   </header>
+
+  <section class="howto">
+    <div class="container">
+      <h2>Using AgInsight in 3 simple steps</h2>
+      <div class="grid3">
+        <div class="card">
+          <h3>1️⃣ Point to your farm</h3>
+          <p>Click the map or type your town, county, or ZIP code below. You can add as many farms as you like.</p>
+        </div>
+        <div class="card">
+          <h3>2️⃣ Tell us what you grow</h3>
+          <p>Pick the crops or livestock you raise. AgInsight watches those prices for you automatically.</p>
+        </div>
+        <div class="card">
+          <h3>3️⃣ Read your outlook</h3>
+          <p>Get a plain-language report: weather, ground conditions, frost risk, and the week ahead.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <section>
     <div class="container grid2">
@@ -220,8 +241,8 @@
 
   <section>
     <div class="container">
-      <h2>🗺️ Select &amp; Monitor Locations</h2>
-      <p class="lead">Start fresh to set new locations, or enter your password to pull up the ones you've saved before.</p>
+      <h2>🗺️ Step 1: Point to your farm(s)</h2>
+      <p class="lead">Mark on the map or type a town, county, or ZIP code to add a farm. Later, enter your password to load the farms you saved before.</p>
 
       <div class="gate" id="locGate">
         <h4>🌱 Welcome to your locations</h4>
@@ -239,32 +260,32 @@
 
       <div id="locArea" style="display:none">
       <div class="loc-search-bar">
-        <input id="locSearch" type="text" placeholder="Search a place, e.g. Dodge City, KS or 73542" aria-label="Search location" />
-        <button class="btn" id="btnSearch">🔍 Add from search</button>
+        <input id="locSearch" type="text" placeholder="Type a town, county, or ZIP code" aria-label="Search location" />
+        <button class="btn" id="btnSearch">🔍 Add this place</button>
         <span class="loc-note" id="locNote"></span>
       </div>
 
       <div class="map-section">
         <div>
           <div id="map"></div>
-          <p class="map-hint">🖱️ Click the map to drop a pin for that location.</p>
+          <p class="map-hint">🖱️ Click the map to drop a pin on your farm, or use the search box above.</p>
         </div>
         <div class="saved-list">
-          <h4>📌 Saved Locations (<span id="savedCount">0</span>)</h4>
-          <div id="savedItems"><p class="saved-empty">No locations saved yet. Click the map or search to add one.</p></div>
+          <h4>📍 Your farms (<span id="savedCount">0</span>)</h4>
+          <div id="savedItems"><p class="saved-empty">No farms added yet. Click the map or search to add one.</p></div>
           <div class="add-by-name">
-            <input id="quickAdd" type="text" placeholder="Quick add by name…" />
-            <button class="btn" id="btnQuickAdd" style="width:100%;">＋ Add</button>
+            <input id="quickAdd" type="text" placeholder="Type a farm name…" />
+            <button class="btn" id="btnQuickAdd" style="width:100%;">＋ Add farm</button>
           </div>
           <div class="actions">
-            <button class="btn ghost" id="btnMonitor">🚜 Monitor All</button>
-            <button class="btn ghost" id="btnClear">🗑 Clear All</button>
+            <button class="btn ghost" id="btnMonitor">🚜 Get my farm report</button>
+            <button class="btn ghost" id="btnClear">🗑 Clear all</button>
           </div>
 
           <!-- Vault: password-based sync across devices -->
           <div class="vault">
-            <h4>🔐 Save My Locations</h4>
-            <p class="hint">Set a password to store your chosen (and nicknamed) locations securely in the cloud. Reopen the URL later and sign in to restore them without re-picking everything.</p>
+            <h4>🔐 Keep my farms saved</h4>
+            <p class="hint">Set a password so you don't have to re-add your farms next time. Reopen this page, enter your password, and press Restore to bring them back.</p>
             <div class="pw-row">
               <input id="vaultPw" type="password" placeholder="Set / enter a password" autocomplete="off" />
               <button class="btn" id="btnVaultSave">💾 Save</button>
@@ -280,11 +301,11 @@
 
   <section>
     <div class="container">
-      <h2>📡 Live Monitoring Results</h2>
-      <p class="lead" id="monitorsLead">Run a monitoring cycle to see validated alerts for your saved locations.</p>
+      <h2>📡 Steps 2 &amp; 3: Your farm report</h2>
+      <p class="lead" id="monitorsLead">Once you've added farms, press “Get my farm report” above. Then read the plain-language outlook below.</p>
 
       <div class="loc-search-bar">
-        <span class="loc-note" style="flex-basis:100%;"><strong>📦 Monitor commodities:</strong> select one or more. Prices are regional (sample) based on each farm's location on the map.</span>
+        <span class="loc-note" style="flex-basis:100%;"><strong>📦 What do you grow?</strong> Pick the crops or livestock on your farm. The price shown is a local estimate for each farm's area.</span>
         <div id="commodityChecks" class="comm-checks"></div>
         <span class="loc-note" id="commodityNote"></span>
       </div>
@@ -409,8 +430,8 @@
       const note = document.getElementById('commodityNote');
       const list = selectedCommodityList();
       note.textContent = list.length
-        ? 'Monitoring ' + list.map(c => c.name).join(', ') + ' — prices are regional (sample) per farm location.'
-        : 'Select at least one commodity.';
+        ? 'Watching prices for: ' + list.map(c => c.name).join(', ') + '. Prices are a local estimate for each farm\u2019s area.'
+        : 'Pick at least one thing you grow.';
     }
 
     function renderCommodityChecks() {
@@ -807,19 +828,20 @@
       const notes = farmNoteLines(w);
       const oLines = outlookLines(w);
       const moistPct = w.soil_moist != null ? (w.soil_moist * 100).toFixed(0) + '%' : 'n/a';
+      const live = w.data_source === 'fallback'; // data_source label kept for fallback detection
 
-      let html = `<div class="row"><span class="label">Location</span><span class="value">${escapeHtml(dispLabel(loc))}${loc.nick ? ' <span style="opacity:.6">(' + escapeHtml(loc.name) + ')</span>' : ''}</span></div>`;
-      html += `<div class="row"><span class="label">Commodities (local)</span><span class="value" style="font-weight:normal;">${prices.map(p => `${escapeHtml(p.name)} $${p.price.toFixed(2)}/${p.unit}`).join('<br/>')}</span></div>`;
-      html += `<div class="row"><span class="label">Air Temp</span><span class="value">${w.temperature_f} °F</span></div>`;
-      html += `<div class="row"><span class="label">Humidity</span><span class="value">${w.humidity_percent != null ? w.humidity_percent + ' %' : 'n/a'}</span></div>`;
-      html += `<div class="row"><span class="label">Soil Temp (3\")</span><span class="value">${w.soil_temp_f != null ? w.soil_temp_f + ' °F' : 'n/a'}</span></div>`;
-      html += `<div class="row"><span class="label">Soil Moisture</span><span class="value">${moistPct} (v/v)${w.soil_source !== 'unavailable' ? ' · ' + escapeHtml(w.soil_source) : ''}</span></div>`;
-      html += `<div class="row"><span class="label">Wind Speed</span><span class="value">${w.wind_speed_mph} mph</span></div>`;
-      html += `<div class="row"><span class="label">Rain Chance (today)</span><span class="value">${w.rain_chance_percent != null ? w.rain_chance_percent + ' %' : 'n/a'}</span></div>`;
-      html += `<div class="row"><span class="label">Data Source</span><span class="value">${escapeHtml(w.data_source)}</span></div>`;
-      html += `<div class="field-notes"><div class="fn-title">🌾 Field Guidance</div>${notes}</div>`;
-      html += `<div class="field-notes"><div class="fn-title">📅 7-Day Outlook</div>${oLines.map(l => `<div class="fn-line">• ${l}</div>`).join('')}</div>`;
-      html += `<div class="row"><span class="label">Validated Alerts</span><span class="value" style="font-weight:normal;white-space:pre-line;">${alerts.join('\n')}</span></div>`;
+      let html = `<div class="row"><span class="label">Farm</span><span class="value">${escapeHtml(dispLabel(loc))}${loc.nick ? ' <span style="opacity:.6">(' + escapeHtml(loc.name) + ')</span>' : ''}</span></div>`;
+      html += `<div class="row"><span class="label">Your crops — local price</span><span class="value" style="font-weight:normal;">${prices.map(p => `${escapeHtml(p.name)} $${p.price.toFixed(2)}/${p.unit}`).join('<br/>')}</span></div>`;
+      html += `<div class="row"><span class="label">Air temperature</span><span class="value">${w.temperature_f} °F</span></div>`;
+      html += `<div class="row"><span class="label">Humidity (mugginess)</span><span class="value">${w.humidity_percent != null ? w.humidity_percent + ' %' : 'n/a'}</span></div>`;
+      html += `<div class="row"><span class="label">Ground temp (3\" deep)</span><span class="value">${w.soil_temp_f != null ? w.soil_temp_f + ' °F' : 'n/a'}</span></div>`;
+      html += `<div class="row"><span class="label">Ground moisture</span><span class="value">${moistPct}${w.soil_source !== 'unavailable' ? ' · live data' : ''}</span></div>`;
+      html += `<div class="row"><span class="label">Wind speed</span><span class="value">${w.wind_speed_mph} mph</span></div>`;
+      html += `<div class="row"><span class="label">Chance of rain today</span><span class="value">${w.rain_chance_percent != null ? w.rain_chance_percent + ' %' : 'n/a'}</span></div>`;
+      html += `<div class="row"><span class="label">Info status</span><span class="value">${live ? 'Some readings are estimates (live weather off)' : 'Live weather &amp; ground data'}</span></div>`;
+      html += `<div class="field-notes"><div class="fn-title">🌾 What this means for you</div>${notes}</div>`;
+      html += `<div class="field-notes"><div class="fn-title">📅 The week ahead</div>${oLines.map(l => `<div class="fn-line">• ${l}</div>`).join('')}</div>`;
+      html += `<div class="row"><span class="label">Validated alerts</span><span class="value" style="font-weight:normal;white-space:pre-line;">${alerts.join('\n')}</span></div>`;
       html += `<div class="row"><span class="label">Status</span><span class="value">${held ? '<span class="status-pill pill-warn">● HELD</span>' : '<span class="status-pill pill-ok">● APPROVED</span>'}</span></div>`;
 
       el.innerHTML = `<h4>${escapeHtml(dispLabel(loc))} ${held ? '<span class="status-pill pill-warn">● HELD</span>' : '<span class="status-pill pill-ok">● APPROVED</span>'}
