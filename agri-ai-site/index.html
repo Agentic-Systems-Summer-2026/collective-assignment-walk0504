@@ -845,6 +845,19 @@
     }
 
     // ---------- Vault (password-based cloud persistence) ----------
+    // Used to allow a vault owner (someone who unlocked with this password) to
+    // update their own vault, while blocking password duplication.
+    let activeVaultHex = null;
+
+    // Is there already a vault stored under this password's key?
+    async function vaultExists(hex) {
+      try {
+        const res = await fetch('/.netlify/functions/vault?key=' + encodeURIComponent(hex));
+        const json = await res.json();
+        return !!(json && json.found);
+      } catch (e) { return false; }
+    }
+
     // Data is encrypted client-side with a key derived from the password via
     // PBKDF2 + AES-GCM. The server only ever stores opaque ciphertext.
     const enc = new TextEncoder();
@@ -896,6 +909,13 @@
       if (!locations.length) { setVaultStatus('Add at least one location before saving.', 'err'); return; }
       try {
         const { key, hex } = await getVaultCrypto(pw);
+        // A password already holding a vault can only be updated by its owner
+        // (the person who unlocked with it). Otherwise reject — no duplicates.
+        const exists = await vaultExists(hex);
+        if (exists && activeVaultHex !== hex) {
+          setVaultStatus('⛔ That password is already in use for a different set of locations. Choose a different password — each password can only save one set.', 'err');
+          return;
+        }
         const payload = await vaultEncrypt(pw, { locations, commodities: selectedCommodities, savedAt: new Date().toISOString() });
         // Keep an encrypted copy locally too, so the next unlock works even offline.
         try {
@@ -906,6 +926,7 @@
           body: JSON.stringify({ key: hex, data: JSON.stringify(payload) })
         });
         if (!res.ok) throw new Error('save failed (' + res.status + ')');
+        activeVaultHex = hex;
         setVaultStatus('💾 Saved! Your locations (and nicknames) are now stored in the cloud for this password.', 'ok');
       } catch (e) {
         console.error(e);
@@ -926,6 +947,7 @@
         if (parsed && Array.isArray(parsed.locations) && parsed.locations.length) {
           locations = parsed.locations;
           if (Array.isArray(parsed.commodities)) setSelectedCommodities(parsed.commodities);
+          activeVaultHex = hex;
           saveLocations();
           renderMarkers();
           renderSavedList();
@@ -1014,6 +1036,7 @@
         if (parsed && Array.isArray(parsed.locations)) {
           locations = parsed.locations;
           if (Array.isArray(parsed.commodities)) setSelectedCommodities(parsed.commodities);
+          activeVaultHex = hex;
           saveLocations();
           renderMarkers();
           renderSavedList();
