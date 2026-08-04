@@ -171,6 +171,10 @@
     .gate .err { color: var(--red); }
     .gate .warn { color: var(--amber); }
     .gate-divider { text-align: center; color: var(--muted); font-size: 0.78rem; margin: 1rem 0 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .comm-checks { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .comm-checks label { display: inline-flex; align-items: center; gap: 0.4rem; background: #fff; border: 1px solid #bcd5b8; border-radius: 999px; padding: 0.45rem 0.95rem; cursor: pointer; font-size: 0.9rem; color: var(--text); user-select: none; }
+    .comm-checks label.checked { background: var(--green-light); border-color: var(--green); }
+    .comm-checks input { accent-color: var(--green); }
 
     /* Nickname editing inside saved items */
     .saved-item .nick { flex: 1; display: flex; align-items: center; gap: 0.3rem; min-width: 0; }
@@ -273,14 +277,8 @@
       <p class="lead" id="monitorsLead">Run a monitoring cycle to see validated alerts for your saved locations.</p>
 
       <div class="loc-search-bar">
-        <label for="commoditySel" style="font-weight:600;color:var(--green-dark);">📦 Monitor commodity:</label>
-        <select id="commoditySel" aria-label="Select commodity" style="padding:0.7rem 1rem;border:1px solid #bcd5b8;border-radius:8px;font-size:0.95rem;background:#fff;color:var(--text);">
-          <option value="wheat">Wheat</option>
-          <option value="corn">Corn</option>
-          <option value="soybeans">Soybeans</option>
-          <option value="cotton">Cotton</option>
-          <option value="oats">Oats</option>
-        </select>
+        <span class="loc-note" style="flex-basis:100%;"><strong>📦 Monitor commodities:</strong> select one or more. Prices are regional (sample) based on each farm's location on the map.</span>
+        <div id="commodityChecks" class="comm-checks"></div>
         <span class="loc-note" id="commodityNote"></span>
       </div>
 
@@ -294,7 +292,7 @@
       <ol class="steps">
         <li><strong>Collect</strong> live weather and commodity data for each location.</li>
         <li><strong>Fallback</strong> to clearly labeled sample data if an API is unavailable.</li>
-        <li><strong>Generate</strong> alerts from defined thresholds (temp, wind, rain, wheat price).</li>
+        <li><strong>Generate</strong> alerts from defined thresholds (temp, wind, rain, selected commodity prices).</li>
         <li><strong>Ground</strong> every statement against the original source data.</li>
         <li><strong>Correct once</strong> — remove unsupported statements, then re-check.</li>
         <li><strong>Approve or hold</strong> the final alert.</li>
@@ -375,22 +373,68 @@
   <script>
     // ---------- State ----------
     const STORAGE_KEY = 'aginsight_locations';
-    // Selectable commodities (which price to include in every monitoring cycle).
+    // Selectable commodities (which regional prices to include in monitoring cycles).
     const COMMODITIES = {
       wheat:    { name: 'Wheat',    price: 5.72,  unit: 'bu' },
       corn:     { name: 'Corn',     price: 4.18,  unit: 'bu' },
       soybeans: { name: 'Soybeans', price: 12.10, unit: 'bu' },
       cotton:   { name: 'Cotton',   price: 0.85,  unit: 'lb' },
-      oats:     { name: 'Oats',     price: 3.40,  unit: 'bu' }
+      oats:     { name: 'Oats',     price: 3.40,  unit: 'bu' },
+      cattle:   { name: 'Cow/Calf', price: 1.80,  unit: 'lb' }
     };
-    let commodityKey = 'wheat';
-    function commodity() { return COMMODITIES[commodityKey] || COMMODITIES.wheat; }
-    function setCommodity(k) {
-      if (COMMODITIES[k]) commodityKey = k;
-      const sel = document.getElementById('commoditySel');
-      if (sel) sel.value = commodityKey;
+    let selectedCommodities = ['wheat'];
+
+    function selectedCommodityList() {
+      return Object.keys(COMMODITIES).filter(k => selectedCommodities.includes(k)).map(k => COMMODITIES[k]);
+    }
+
+    // Deterministic demo regional price: the same farm location always yields
+    // the same local price, and different farms get slightly different ones.
+    function regionalPrice(c, loc) {
+      let h = 0;
+      const s = String(loc.lat) + '|' + String(loc.lon) + '|' + c.name;
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+      const factor = ((h % 100) / 1000) - 0.05; // -5% .. +5%
+      return { name: c.name, price: +(c.price * (1 + factor)).toFixed(2), unit: c.unit };
+    }
+
+    function updateCommodityNote() {
       const note = document.getElementById('commodityNote');
-      if (note) note.textContent = 'Including ' + commodity().name + ' price in monitoring cycles.';
+      const list = selectedCommodityList();
+      note.textContent = list.length
+        ? 'Monitoring ' + list.map(c => c.name).join(', ') + ' — prices are regional (sample) per farm location.'
+        : 'Select at least one commodity.';
+    }
+
+    function renderCommodityChecks() {
+      const wrap = document.getElementById('commodityChecks');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      Object.entries(COMMODITIES).forEach(([k, c]) => {
+        const lbl = document.createElement('label');
+        const inp = document.createElement('input');
+        inp.type = 'checkbox';
+        inp.checked = selectedCommodities.includes(k);
+        inp.value = k;
+        inp.addEventListener('change', () => {
+          selectedCommodities = inp.checked
+            ? (selectedCommodities.includes(k) ? selectedCommodities : selectedCommodities.concat(k))
+            : selectedCommodities.filter(x => x !== k);
+          lbl.className = inp.checked ? 'checked' : '';
+          updateCommodityNote();
+        });
+        lbl.appendChild(inp);
+        lbl.appendChild(document.createTextNode(' ' + c.name + ' — $' + c.price.toFixed(2) + '/' + c.unit));
+        lbl.className = inp.checked ? 'checked' : '';
+        wrap.appendChild(lbl);
+      });
+      updateCommodityNote();
+    }
+
+    function setSelectedCommodities(keys) {
+      const valid = Array.isArray(keys) ? keys.filter(k => COMMODITIES[k]) : [];
+      if (valid.length) selectedCommodities = valid;
+      renderCommodityChecks();
     }
     const FALLBACK = { temperature_f: 96, rain_chance_percent: 15, wind_speed_mph: 13, data_source: 'fallback' };
 
@@ -586,16 +630,16 @@
       };
     }
 
-    function buildCycle(w, name) {
+    function buildCycle(w, loc) {
       const alerts = [];
       if (w.temperature_f >= 100) alerts.push(`Extreme heat alert: ${w.temperature_f}°F`);
       else if (w.temperature_f >= 95) alerts.push(`Heat advisory: ${w.temperature_f}°F`);
       if (w.wind_speed_mph >= 20) alerts.push(`High wind advisory: ${w.wind_speed_mph} mph`);
       if (w.rain_chance_percent >= 70) alerts.push(`Heavy rain may affect field work (${w.rain_chance_percent}%)`);
-      const c = commodity();
-      alerts.push(`${c.name} price: $${c.price.toFixed(2)}/${c.unit}`);
-      const held = w.data_source === 'fallback' || alerts.length <= 1; // only the price line = nothing actionable
-      return { alerts, held, w, commodity: c };
+      const prices = selectedCommodityList().map(c => regionalPrice(c, loc));
+      prices.forEach(p => alerts.push(`${p.name} price (local): $${p.price.toFixed(2)}/${p.unit}`));
+      const held = w.data_source === 'fallback' || alerts.length <= 1; // only price lines = nothing actionable
+      return { alerts, held, w, prices };
     }
 
     function renderMonitorCard(loc) {
@@ -628,9 +672,9 @@
         w = await fetchWeather(loc);
       } catch (e) { /* fallback */ }
 
-      const { alerts, held, commodity: c } = buildCycle(w, loc.name);
+      const { alerts, held, prices } = buildCycle(w, loc);
       let html = `<div class="row"><span class="label">Location</span><span class="value">${escapeHtml(dispLabel(loc))}${loc.nick ? ' <span style="opacity:.6">(' + escapeHtml(loc.name) + ')</span>' : ''}</span></div>`;
-      html += `<div class="row"><span class="label">Commodity</span><span class="value">${escapeHtml(c.name)} — $${c.price.toFixed(2)}/${c.unit}</span></div>`;
+      html += `<div class="row"><span class="label">Commodities (local)</span><span class="value" style="font-weight:normal;">${prices.map(p => `${escapeHtml(p.name)} $${p.price.toFixed(2)}/${p.unit}`).join('<br/>')}</span></div>`;
       html += `<div class="row"><span class="label">Temperature</span><span class="value">${w.temperature_f} °F</span></div>`;
       html += `<div class="row"><span class="label">Wind Speed</span><span class="value">${w.wind_speed_mph} mph</span></div>`;
       html += `<div class="row"><span class="label">Rain Chance</span><span class="value">${w.rain_chance_percent} %</span></div>`;
@@ -712,7 +756,7 @@
       if (!locations.length) { setVaultStatus('Add at least one location before saving.', 'err'); return; }
       try {
         const { key, hex } = await getVaultCrypto(pw);
-        const payload = await vaultEncrypt(pw, { locations, commodity: commodityKey, savedAt: new Date().toISOString() });
+        const payload = await vaultEncrypt(pw, { locations, commodities: selectedCommodities, savedAt: new Date().toISOString() });
         // Keep an encrypted copy locally too, so the next unlock works even offline.
         try {
           localStorage.setItem(VAULT_CACHE, JSON.stringify({ hex, iv: payload.iv, data: payload.data }));
@@ -741,7 +785,7 @@
         const parsed = await vaultDecrypt(pw, payload);
         if (parsed && Array.isArray(parsed.locations) && parsed.locations.length) {
           locations = parsed.locations;
-          if (parsed.commodity) setCommodity(parsed.commodity);
+          if (Array.isArray(parsed.commodities)) setSelectedCommodities(parsed.commodities);
           saveLocations();
           renderMarkers();
           renderSavedList();
@@ -829,7 +873,7 @@
         const parsed = await vaultDecrypt(pw, payloadCipher);
         if (parsed && Array.isArray(parsed.locations)) {
           locations = parsed.locations;
-          if (parsed.commodity) setCommodity(parsed.commodity);
+          if (Array.isArray(parsed.commodities)) setSelectedCommodities(parsed.commodities);
           saveLocations();
           renderMarkers();
           renderSavedList();
@@ -864,12 +908,11 @@
     document.getElementById('btnUnlock').addEventListener('click', () => unlockLocations());
     document.getElementById('gatePw').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlockLocations(); });
     document.getElementById('btnStartFresh').addEventListener('click', startFresh);
-    document.getElementById('commoditySel').addEventListener('change', (e) => setCommodity(e.target.value));
 
     showGate();
     renderMarkers();
     renderSavedList();
-    setCommodity(commodityKey);
+    renderCommodityChecks();
     setGateStatus('', '');
   </script>
 </body>
