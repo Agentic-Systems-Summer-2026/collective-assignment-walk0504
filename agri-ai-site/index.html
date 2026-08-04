@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgInsight — Trustworthy AI Farm Monitoring</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-dark: #1a3a1a;
+      --green: #2a6b2a;
+      --green-light: #eaf3ea;
+      --amber: #f0a500;
+      --red: #c0392b;
+      --text: #21311f;
+      --muted: #5a7a55;
+      --bg: #f4f7f2;
+      --card: #ffffff;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container { max-width: 1060px; margin: 0 auto; padding: 0 1.25rem; }
+
+    header.hero {
+      background: linear-gradient(135deg, #1c4a1c 0%, #2a6b2a 60%, #3a8a3a 100%);
+      color: #fff;
+      padding: 3.5rem 0 3rem;
+      text-align: center;
+    }
+
+    header.hero h1 { font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.5px; }
+    header.hero p.tag {
+      margin-top: 0.75rem; font-size: 1.1rem; opacity: 0.92; max-width: 680px;
+      margin-left: auto; margin-right: auto;
+    }
+    header.hero .badge {
+      display: inline-block; margin-top: 1.25rem; padding: 0.45rem 1rem;
+      border: 1px solid rgba(255,255,255,0.4); border-radius: 999px;
+      font-size: 0.85rem; background: rgba(255,255,255,0.12);
+    }
+
+    section { padding: 3rem 0; }
+    section h2 {
+      font-size: 1.6rem; color: var(--green-dark); margin-bottom: 1rem;
+      border-bottom: 3px solid var(--green-light); padding-bottom: 0.5rem;
+    }
+    section p.lead { color: var(--muted); margin-bottom: 1rem; }
+
+    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; }
+
+    .card {
+      background: var(--card); border-radius: 12px; padding: 1.4rem 1.6rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06); border-left: 4px solid var(--green);
+    }
+    .card.amber { border-left-color: var(--amber); }
+    .card.red { border-left-color: var(--red); }
+    .card h3 { font-size: 1.05rem; color: var(--green-dark); margin-bottom: 0.4rem; }
+    .card p, .card li { color: var(--text); font-size: 0.95rem; }
+    .card ul { padding-left: 1.2rem; }
+
+    /* Map + saved locations */
+    .map-section { display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; align-items: start; }
+    @media (max-width: 860px) { .map-section { grid-template-columns: 1fr; } }
+    #map { height: 460px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); z-index: 0; }
+    .map-hint { margin-top: 0.6rem; font-size: 0.85rem; color: var(--muted); }
+
+    .saved-list { background: var(--card); border-radius: 12px; padding: 1.2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .saved-list h4 { color: var(--green-dark); margin-bottom: 0.8rem; }
+    .saved-empty { color: var(--muted); font-size: 0.88rem; }
+    .saved-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+      padding: 0.55rem 0.6rem; border-radius: 8px; margin-bottom: 0.4rem; background: var(--green-light);
+    }
+    .saved-item .name { font-size: 0.92rem; font-weight: 600; color: var(--green-dark); flex: 1; }
+    .saved-item .rm {
+      background: none; border: none; color: var(--red); cursor: pointer; font-size: 1.1rem; line-height: 1;
+    }
+    .saved-item .rm:hover { transform: scale(1.15); }
+    .saved-item.active { outline: 2px solid var(--green); }
+    .saved-item .pin { color: var(--green); margin-right: 0.2rem; }
+    .add-by-name { margin-top: 0.9rem; }
+    .add-by-name input[type=text] {
+      width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #bcd5b8; border-radius: 8px;
+      font-size: 0.9rem; margin-bottom: 0.5rem;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+
+    /* Live monitors (one per selected location) */
+    .monitors { display: grid; gap: 1.25rem; }
+    .monitor {
+      background: #10230f; color: #d7f0d2; border-radius: 14px; padding: 1.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .monitor h4 { color: #b8e8b2; font-family: system-ui, sans-serif; font-size: 1.05rem; margin-bottom: 0.8rem; display:flex; justify-content:space-between; align-items:center; }
+    .monitor .row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px dashed rgba(255,255,255,0.14); }
+    .monitor .row:last-child { border-bottom: none; }
+    .monitor .label { color: #8fc98a; }
+    .monitor .value { color: #fff; font-weight: 600; text-align: right; }
+    .status-pill { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+    .pill-ok { background: #1f7a33; color: #eaffef; }
+    .pill-warn { background: #b07d12; color: #fff8e1; }
+
+    .loc-search-bar { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-bottom: 1rem; }
+    .loc-search-bar input[type=text] {
+      flex: 1 1 260px; padding: 0.7rem 1rem; border: 1px solid #bcd5b8; border-radius: 8px;
+      font-size: 0.95rem; background: #fff; color: var(--text); min-width: 220px;
+    }
+    .loc-search-bar input[type=text]:focus { outline: 2px solid var(--green); border-color: var(--green); }
+    .loc-note { font-size: 0.85rem; color: var(--muted); flex-basis: 100%; }
+
+    button.btn {
+      background: var(--green); color: #fff; border: none; padding: 0.7rem 1.4rem;
+      border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.btn:hover { background: var(--green-dark); }
+    button.btn.ghost { background: #fff; color: var(--green); border: 1px solid var(--green); }
+    button.btn.ghost:hover { background: var(--green-light); }
+    button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .steps { list-style: none; counter-reset: step; }
+    .steps li { counter-increment: step; padding: 0.8rem 0 0.8rem 3rem; position: relative; }
+    .steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 0.8rem;
+      width: 2rem; height: 2rem; background: var(--green); color: #fff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem;
+    }
+
+    table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    th, td { text-align: left; padding: 0.8rem 1rem; border-bottom: 1px solid #e3ece1; font-size: 0.92rem; }
+    th { background: var(--green-light); color: var(--green-dark); }
+
+    footer {
+      text-align: center; padding: 2.5rem 0; color: var(--muted); font-size: 0.85rem;
+      border-top: 1px solid #e0ebdd; margin-top: 2rem;
+    }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #93d48c; border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Vault (password persistence) */
+    .vault { background: var(--card); border-radius: 12px; padding: 1.2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-top: 1rem; border-left: 4px solid var(--amber); }
+    .vault h4 { color: var(--green-dark); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
+    .vault p.hint { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.8rem; }
+    .vault .pw-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .vault input[type=password] {
+      flex: 1 1 180px; padding: 0.6rem 0.8rem; border: 1px solid #bcd5b8; border-radius: 8px;
+      font-size: 0.9rem; background: #fff; color: var(--text); min-width: 160px;
+    }
+    .vault .status { font-size: 0.85rem; margin-top: 0.6rem; min-height: 1.2em; }
+    .vault .ok { color: var(--green); }
+    .vault .err { color: var(--red); }
+    .vault .warn { color: var(--amber); }
+
+    /* Lock gate — password required on every visit */
+    .gate { background: var(--card); border-radius: 12px; padding: 1.6rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06); border-left: 4px solid var(--green); max-width: 540px; margin-top: 1rem; }
+    .gate h4 { color: var(--green-dark); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+    .gate p.hint { font-size: 0.88rem; color: var(--muted); margin-bottom: 0.9rem; }
+    .gate .pw-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .gate input[type=password] { flex: 1 1 200px; padding: 0.7rem 0.9rem; border: 1px solid #bcd5b8; border-radius: 8px; font-size: 0.95rem; background: #fff; color: var(--text); min-width: 170px; }
+    .gate .ok { color: var(--green); }
+    .gate .err { color: var(--red); }
+    .gate .warn { color: var(--amber); }
+
+    /* Nickname editing inside saved items */
+    .saved-item .nick { flex: 1; display: flex; align-items: center; gap: 0.3rem; min-width: 0; }
+    .saved-item .nick input {
+      width: 100%; padding: 0.25rem 0.4rem; border: 1px solid transparent; border-radius: 6px;
+      font-size: 0.9rem; font-weight: 600; color: var(--green-dark); background: transparent;
+    }
+    .saved-item .nick input:hover { border-color: #bcd5b8; }
+    .saved-item .nick input:focus { border-color: var(--green); background: #fff; outline: none; }
+    .saved-item .nick .sub { font-size: 0.72rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .saved-item .nick-edit { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="container">
+      <h1>🌱 AgInsight</h1>
+      <p class="tag">A trustworthy AI farm monitoring agent that validates every alert against its source data before approval.</p>
+      <span class="badge">Capstone · Agentic Systems · Multi-Farm Monitoring</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="container grid2">
+      <div class="card">
+        <h3>🎯 The Problem</h3>
+        <p>Farmers make time-sensitive decisions from weather and market data. AI can summarize this, but it may invent unsupported statements. A wrong alert means wasted time, money, or poor decisions.</p>
+      </div>
+      <div class="card">
+        <h3>✅ The Solution</h3>
+        <p>AgInsight grounds <strong>every</strong> alert statement against the original data before delivery. Unsupported claims are removed — so the farmer only sees trustworthy, verified information.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>🗺️ Select &amp; Monitor Locations</h2>
+      <p class="lead">Your saved locations stay locked on every visit. Enter your password to pull them up, then add, edit, and monitor them as usual.</p>
+
+      <div class="gate" id="locGate">
+        <h4>🔒 Locations are locked</h4>
+        <p class="hint">Each time you open this link, your saved locations stay hidden until you enter your password.</p>
+        <div class="pw-row">
+          <input id="gatePw" type="password" placeholder="Type your password" autocomplete="off" />
+          <button class="btn" id="btnUnlock">🔓 Pull up locations</button>
+        </div>
+        <div class="status" id="gateStatus"></div>
+      </div>
+
+      <div id="locArea" style="display:none">
+      <div class="loc-search-bar">
+        <input id="locSearch" type="text" placeholder="Search a place, e.g. Dodge City, KS or 73542" aria-label="Search location" />
+        <button class="btn" id="btnSearch">🔍 Add from search</button>
+        <span class="loc-note" id="locNote"></span>
+      </div>
+
+      <div class="map-section">
+        <div>
+          <div id="map"></div>
+          <p class="map-hint">🖱️ Click the map to drop a pin for that location.</p>
+        </div>
+        <div class="saved-list">
+          <h4>📌 Saved Locations (<span id="savedCount">0</span>)</h4>
+          <div id="savedItems"><p class="saved-empty">No locations saved yet. Click the map or search to add one.</p></div>
+          <div class="add-by-name">
+            <input id="quickAdd" type="text" placeholder="Quick add by name…" />
+            <button class="btn" id="btnQuickAdd" style="width:100%;">＋ Add</button>
+          </div>
+          <div class="actions">
+            <button class="btn ghost" id="btnMonitor">🚜 Monitor All</button>
+            <button class="btn ghost" id="btnClear">🗑 Clear All</button>
+          </div>
+
+          <!-- Vault: password-based sync across devices -->
+          <div class="vault">
+            <h4>🔐 Save My Locations</h4>
+            <p class="hint">Set a password to store your chosen (and nicknamed) locations securely in the cloud. Reopen the URL later and sign in to restore them without re-picking everything.</p>
+            <div class="pw-row">
+              <input id="vaultPw" type="password" placeholder="Set / enter a password" autocomplete="off" />
+              <button class="btn" id="btnVaultSave">💾 Save</button>
+              <button class="btn ghost" id="btnVaultLoad">🔓 Restore</button>
+            </div>
+            <div class="status" id="vaultStatus"></div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>📡 Live Monitoring Results</h2>
+      <p class="lead" id="monitorsLead">Run a monitoring cycle to see validated alerts for your saved locations.</p>
+      <div class="monitors" id="monitors"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>⚙️ How It Works</h2>
+      <ol class="steps">
+        <li><strong>Collect</strong> live weather and commodity data for each location.</li>
+        <li><strong>Fallback</strong> to clearly labeled sample data if an API is unavailable.</li>
+        <li><strong>Generate</strong> alerts from defined thresholds (temp, wind, rain, wheat price).</li>
+        <li><strong>Ground</strong> every statement against the original source data.</li>
+        <li><strong>Correct once</strong> — remove unsupported statements, then re-check.</li>
+        <li><strong>Approve or hold</strong> the final alert.</li>
+        <li><strong>Log</strong> the entire cycle for observability.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>🗺️ System Architecture</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3>Data Collection</h3>
+          <ul>
+            <li>Open-Meteo Weather API (live, per location)</li>
+            <li>Alpha Vantage commodity prices</li>
+            <li>Labeled fallback data on failure</li>
+            <li>OU LiteLLM Sandbox for summaries</li>
+          </ul>
+        </div>
+        <div class="card amber">
+          <h3>Grounding Validation</h3>
+          <ul>
+            <li>Extreme heat ≥ 100°F</li>
+            <li>Heat advisory 95–99°F</li>
+            <li>High wind ≥ 20 mph</li>
+            <li>Heavy rain ≥ 70% chance</li>
+            <li>Wheat price must match source exactly</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Reliability</h3>
+          <ul>
+            <li>One correction attempt — no endless loops</li>
+            <li>Ground before delivery</li>
+            <li>Graceful API fallback</li>
+            <li>Complete observability log</li>
+          </ul>
+        </div>
+        <div class="card red">
+          <h3>Trust-First Design</h3>
+          <p>Verified statements reach the farmer; unsupported claims are removed. Farmers stay responsible for every operational decision.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2>📊 Evaluation Results</h2>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Evaluation cases</td><td>8</td></tr>
+          <tr><td>Cases passed</td><td>8</td></tr>
+          <tr><td>Pass rate</td><td><strong>100%</strong></td></tr>
+          <tr><td>Required threshold</td><td>80%</td></tr>
+          <tr><td>CI regression gate</td><td>Green (deliberately broken run failed as expected)</td></tr>
+          <tr><td>Demo model</td><td>OU LiteLLM Sandbox (Qwen3 Coder 30B)</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:1rem; color:var(--muted);">The harness verifies alert correctness, absence of unsupported statements, correct wheat pricing, threshold boundaries, and output structure. The LLM judge was calibrated against human labels after it initially mislabeled two correct outputs.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      AgInsight · Capstone Project · Agentic Systems<br/>
+      Built with Leaflet + OpenStreetMap, Open-Meteo, Alpha Vantage &amp; OU LiteLLM Sandbox · Deployed on Netlify
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    // ---------- State ----------
+    const STORAGE_KEY = 'aginsight_locations';
+    const WHEAT = 5.72;                 // demo constant (global wheat price)
+    const FALLBACK = { temperature_f: 96, rain_chance_percent: 15, wind_speed_mph: 13, data_source: 'fallback' };
+
+    // Seed with Weatherford, OK so the page isn't empty.
+    const DEFAULT_LOCS = [
+      { name: 'Weatherford, OK, USA', lat: 35.5262, lon: -98.7076, nick: 'Home Farm' }
+    ];
+
+    // ---------- Nickname helpers ----------
+    function dispLabel(loc) {
+      const n = (loc.nick || '').trim();
+      return n ? n : loc.name;
+    }
+
+    // Locations start empty and locked. They are only loaded (pulled up) after
+    // the user enters the correct password (see unlockLocations). Plaintext is
+    // never rendered on page load.
+    let locations = [];
+
+    function loadLocations() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length) return parsed;
+        }
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(DEFAULT_LOCS));
+    }
+
+    function saveLocations() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(locations)); } catch (e) {}
+    }
+
+    // ---------- Map ----------
+    const map = L.map('map').setView([35.5262, -98.7076], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    const markerLayer = L.layerGroup().addTo(map);
+    const markers = {};
+
+    function renderMarkers() {
+      markerLayer.clearLayers();
+      markers.length = 0;
+      Object.keys(markers).forEach(k => delete markers[k]);
+      locations.forEach((loc, idx) => {
+        const color = `hsl(${(idx * 137) % 360}, 70%, 45%)`;
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:${color};transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
+          iconSize: [22, 22], iconAnchor: [22, 22]
+        });
+        const id = loc.lat.toFixed(5) + ',' + loc.lon.toFixed(5);
+        const m = L.marker([loc.lat, loc.lon], { icon }).addTo(markerLayer)
+          .bindPopup(`<strong>${escapeHtml(dispLabel(loc))}</strong><br/>${escapeHtml(loc.name)}<br/>${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}`);
+        markers[id] = m;
+        m.on('click', () => { monitorOne(loc); });
+      });
+    }
+
+    map.on('click', async (e) => {
+      const { lat, lng } = e.latlng;
+      const name = await reverseGeocode(lat, lng) || `Location (${lat.toFixed(3)}, ${lng.toFixed(3)})`;
+      addLocation({ name, lat, lon: lng });
+    });
+
+    // ---------- Geocoding ----------
+    async function reverseGeocode(lat, lon) {
+      try {
+        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=x&count=1`);
+        // Reverse geocoding isn't free here; use a best-effort via Nominatim.
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+        if (!r.ok) return null;
+        const d = await r.json();
+        return d.display_name || null;
+      } catch (e) { return null; }
+    }
+
+    async function geocode(query) {
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('geocoding failed');
+      const data = await res.json();
+      const hit = data && data.results && data.results[0];
+      if (!hit) throw new Error('no match');
+      return {
+        name: [hit.name, hit.admin1, hit.country].filter(Boolean).join(', '),
+        lat: hit.latitude,
+        lon: hit.longitude
+      };
+    }
+
+    // ---------- Manage locations ----------
+    function addLocation(loc) {
+      if (!loc.name) loc.name = 'Location';
+      locations.push({ name: loc.name, lat: loc.lat, lon: loc.lon });
+      saveLocations();
+      renderMarkers();
+      renderSavedList();
+      setNote(`📍 Added: ${loc.name}`, false);
+    }
+
+    function removeLocation(index) {
+      locations.splice(index, 1);
+      saveLocations();
+      renderMarkers();
+      renderSavedList();
+    }
+
+    function setNick(index, nick) {
+      if (!locations[index]) return;
+      locations[index].nick = nick;
+      saveLocations();
+      renderMarkers();
+      const loc = locations[index];
+      const card = document.getElementById('mon-' + loc.lat.toFixed(5) + ',' + loc.lon.toFixed(5));
+      if (card) {
+        const h4 = card.querySelector('h4');
+        if (h4 && h4.firstChild) h4.firstChild.textContent = dispLabel(loc) + ' ';
+      }
+    }
+
+    function clearLocations() {
+      locations = [];
+      saveLocations();
+      renderMarkers();
+      renderSavedList();
+      document.getElementById('monitors').innerHTML = '';
+      document.getElementById('monitorsLead').textContent = 'Run a monitoring cycle to see validated alerts for your saved locations.';
+    }
+
+    function renderSavedList() {
+      const wrap = document.getElementById('savedItems');
+      document.getElementById('savedCount').textContent = locations.length;
+      if (!locations.length) {
+        wrap.innerHTML = '<p class="saved-empty">No locations saved yet. Click the map or search to add one.</p>';
+        return;
+      }
+      wrap.innerHTML = '';
+      locations.forEach((loc, idx) => {
+        const div = document.createElement('div');
+        div.className = 'saved-item';
+        div.innerHTML = `<span class="pin">📍</span>
+          <div class="nick-edit">
+            <div class="nick"><input type="text" class="nick-input" value="${escapeHtml(dispLabel(loc))}" title="Edit nickname" aria-label="Nickname" /></div>
+            <div class="sub">${escapeHtml(loc.name)} · ${loc.lat.toFixed(3)}, ${loc.lon.toFixed(3)}</div>
+          </div>
+          <button class="rm" title="Remove">×</button>`;
+        const rm = div.querySelector('.rm');
+        const inp = div.querySelector('.nick-input');
+        rm.addEventListener('click', (e) => { e.stopPropagation(); removeLocation(idx); });
+        inp.addEventListener('input', () => {
+          locations[idx].nick = inp.value.trim();
+          saveLocations();
+          renderMarkers();
+        });
+        inp.addEventListener('click', (e) => e.stopPropagation());
+        div.addEventListener('click', () => {
+          monitorOne(loc);
+          map.setView([loc.lat, loc.lon], 9);
+        });
+        wrap.appendChild(div);
+      });
+    }
+
+    async function addFromSearch(query) {
+      setNote('');
+      try {
+        const g = await geocode(query);
+        addLocation(g);
+        map.setView([g.lat, g.lon], 9);
+      } catch (e) {
+        setNote('⚠️ Could not find that location. Try another search.', true);
+      }
+    }
+
+    // ---------- Monitoring ----------
+    const monitorsLead = document.getElementById('monitorsLead');
+
+    async function fetchWeather(loc) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,wind_speed_10m&daily=precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=1`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('weather api error');
+      const d = await res.json();
+      return {
+        temperature_f: Math.round(d.current.temperature_2m),
+        rain_chance_percent: Math.round(d.daily.precipitation_probability_max[0]),
+        wind_speed_mph: Math.round(d.current.wind_speed_10m),
+        data_source: 'Open-Meteo API (live)'
+      };
+    }
+
+    function buildCycle(w, name) {
+      const alerts = [];
+      if (w.temperature_f >= 100) alerts.push(`Extreme heat alert: ${w.temperature_f}°F`);
+      else if (w.temperature_f >= 95) alerts.push(`Heat advisory: ${w.temperature_f}°F`);
+      if (w.wind_speed_mph >= 20) alerts.push(`High wind advisory: ${w.wind_speed_mph} mph`);
+      if (w.rain_chance_percent >= 70) alerts.push(`Heavy rain may affect field work (${w.rain_chance_percent}%)`);
+      alerts.push(`Wheat price: $${WHEAT.toFixed(2)}/bu`);
+      const held = w.data_source === 'fallback' || alerts.length <= 1; // only the wheat line = nothing actionable
+      return { alerts, held, w };
+    }
+
+    function renderMonitorCard(loc) {
+      const el = document.createElement('div');
+      el.className = 'monitor';
+      el.id = 'mon-' + loc.lat.toFixed(5) + ',' + loc.lon.toFixed(5);
+      el.innerHTML = `<h4>${escapeHtml(loc.name)}
+        <button class="btn ghost" style="padding:0.3rem 0.8rem;font-size:0.8rem;" onclick="monitorOne(${JSON.stringify(loc).replace(/"/g,'&quot;')})">↻</button></h4>
+        <div class="row"><span class="label"><span class="spinner"></span> Loading…</span></div>`;
+      return el;
+    }
+
+    async function monitorOne(loc) {
+      const lead = document.getElementById('monitorsLead');
+      lead.textContent = `Cycle for ${loc.name}…`;
+
+      const container = document.getElementById('monitors');
+      let el = document.getElementById('mon-' + loc.lat.toFixed(5) + ',' + loc.lon.toFixed(5));
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'monitor';
+        el.id = 'mon-' + loc.lat.toFixed(5) + ',' + loc.lon.toFixed(5);
+        container.appendChild(el);
+      }
+      el.innerHTML = `<h4 data-nick=\"${escapeHtml(dispLabel(loc))}\">${escapeHtml(dispLabel(loc))} <span class="status-pill pill-warn"><span class="spinner"></span> loading…</span></h4>
+        <div class="row"><span class="label">Fetching live data…</span></div>`;
+
+      let w = FALLBACK;
+      try {
+        w = await fetchWeather(loc);
+      } catch (e) { /* fallback */ }
+
+      const { alerts, held } = buildCycle(w, loc.name);
+      let html = `<div class="row"><span class="label">Location</span><span class="value">${escapeHtml(dispLabel(loc))}${loc.nick ? ' <span style="opacity:.6">(' + escapeHtml(loc.name) + ')</span>' : ''}</span></div>`;
+      html += `<div class="row"><span class="label">Temperature</span><span class="value">${w.temperature_f} °F</span></div>`;
+      html += `<div class="row"><span class="label">Wind Speed</span><span class="value">${w.wind_speed_mph} mph</span></div>`;
+      html += `<div class="row"><span class="label">Rain Chance</span><span class="value">${w.rain_chance_percent} %</span></div>`;
+      html += `<div class="row"><span class="label">Data Source</span><span class="value">${escapeHtml(w.data_source)}</span></div>`;
+      html += `<div class="row"><span class="label">Validated Alerts</span><span class="value" style="font-weight:normal;white-space:pre-line;">${alerts.join('\n')}</span></div>`;
+      html += `<div class="row"><span class="label">Status</span><span class="value">${held ? '<span class="status-pill pill-warn">● HELD</span>' : '<span class="status-pill pill-ok">● APPROVED</span>'}</span></div>`;
+
+      el.innerHTML = `<h4>${escapeHtml(dispLabel(loc))} ${held ? '<span class="status-pill pill-warn">● HELD</span>' : '<span class="status-pill pill-ok">● APPROVED</span>'}
+        <button class="btn ghost" style="padding:0.3rem 0.8rem;font-size:0.8rem;" data-refresh="1">↻</button></h4>
+        ${html}`;
+      el.querySelector('[data-refresh]').addEventListener('click', () => monitorOne(loc));
+    }
+
+    async function monitorAll() {
+      if (!locations.length) { setNote('Add at least one location first.', true); return; }
+      monitorsLead.textContent = `Running ${locations.length} monitoring cycle(s)…`;
+      for (const loc of locations) {
+        await monitorOne(loc);
+      }
+      monitorsLead.textContent = `Showing ${locations.length} location(s). Click any card’s ↻ to refresh that spot.`;
+    }
+
+    // ---------- UI helpers ----------
+    function setNote(msg, isErr) {
+      const n = document.getElementById('locNote');
+      n.textContent = msg || '';
+      n.style.color = isErr ? 'var(--red)' : 'var(--muted)';
+    }
+
+    // ---------- Vault (password-based cloud persistence) ----------
+    // Data is encrypted client-side with a key derived from the password via
+    // PBKDF2 + AES-GCM. The server only ever stores opaque ciphertext.
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+
+    async function getVaultCrypto(pw) {
+      const salt = enc.encode('aginsight-vault-salt-v1');
+      const baseKey = await crypto.subtle.importKey(
+        'raw', enc.encode('aginsight-vault-pepper-' + pw),
+        'PBKDF2', false, ['deriveKey']
+      );
+      const key = await crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' },
+        baseKey, { name: 'AES-GCM', length: 256 },
+        false, ['encrypt', 'decrypt']
+      );
+      // Vault lookup key: SHA-256 of password (so only the holder can find/decrypt).
+      const hbuf = await crypto.subtle.digest('SHA-256', enc.encode('aginsight:' + pw));
+      const hex = [...new Uint8Array(hbuf)].map(b => b.toString(16).padStart(2, '0')).join('');
+      return { key, hex };
+    }
+
+    async function vaultEncrypt(pw, obj) {
+      const { key } = await getVaultCrypto(pw);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const cipher = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv }, key, enc.encode(JSON.stringify(obj))
+      );
+      return { iv: btoa(String.fromCharCode(...iv)), data: btoa(String.fromCharCode(...new Uint8Array(cipher))) };
+    }
+
+    async function vaultDecrypt(pw, payload) {
+      const { key } = await getVaultCrypto(pw);
+      const iv = Uint8Array.from(atob(payload.iv), c => c.charCodeAt(0));
+      const data = Uint8Array.from(atob(payload.data), c => c.charCodeAt(0));
+      const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
+      return JSON.parse(dec.decode(plain));
+    }
+
+    function setVaultStatus(msg, cls) {
+      const s = document.getElementById('vaultStatus');
+      s.textContent = msg;
+      s.className = 'status ' + (cls || '');
+    }
+
+    async function saveToVault() {
+      const pw = document.getElementById('vaultPw').value;
+      if (!pw) { setVaultStatus('Please enter a password first.', 'err'); return; }
+      if (!locations.length) { setVaultStatus('Add at least one location before saving.', 'err'); return; }
+      try {
+        const { key, hex } = await getVaultCrypto(pw);
+        const payload = await vaultEncrypt(pw, { locations, savedAt: new Date().toISOString() });
+        // Keep an encrypted copy locally too, so the next unlock works even offline.
+        try {
+          localStorage.setItem(VAULT_CACHE, JSON.stringify({ hex, iv: payload.iv, data: payload.data }));
+        } catch (e) {}
+        const res = await fetch('/.netlify/functions/vault?key=' + encodeURIComponent(hex), {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ key: hex, data: JSON.stringify(payload) })
+        });
+        if (!res.ok) throw new Error('save failed (' + res.status + ')');
+        setVaultStatus('💾 Saved! Your locations (and nicknames) are now stored in the cloud for this password.', 'ok');
+      } catch (e) {
+        console.error(e);
+        setVaultStatus('⚠️ Could not save. ' + e.message, 'err');
+      }
+    }
+
+    async function loadFromVault() {
+      const pw = document.getElementById('vaultPw').value;
+      if (!pw) { setVaultStatus('Enter your password to restore your locations.', 'warn'); return; }
+      try {
+        const { key, hex } = await getVaultCrypto(pw);
+        const res = await fetch('/.netlify/functions/vault?key=' + encodeURIComponent(hex));
+        const json = await res.json();
+        if (!json.found) { setVaultStatus('No saved data found for that password yet.', 'warn'); return; }
+        const payload = JSON.parse(json.data);
+        const parsed = await vaultDecrypt(pw, payload);
+        if (parsed && Array.isArray(parsed.locations) && parsed.locations.length) {
+          locations = parsed.locations;
+          saveLocations();
+          renderMarkers();
+          renderSavedList();
+          setVaultStatus('🔓 Restored ' + locations.length + ' location(s) and their nicknames.', 'ok');
+          if (locations.length) map.setView([locations[0].lat, locations[0].lon], 9);
+        } else {
+          setVaultStatus('Saved data was empty or unrecognized.', 'err');
+        }
+      } catch (e) {
+        console.error(e);
+        setVaultStatus('⚠️ Could not restore. Wrong password or corrupt data? ' + e.message, 'err');
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // ---------- Lock gate (password required every visit) ----------
+    const VAULT_CACHE = 'aginsight_vault_cache';
+
+    function setGateStatus(msg, cls) {
+      const s = document.getElementById('gateStatus');
+      s.textContent = msg;
+      s.className = 'status ' + (cls || '');
+    }
+
+    function showGate() {
+      document.getElementById('locGate').style.display = 'block';
+      document.getElementById('locArea').style.display = 'none';
+    }
+
+    function hideGate() {
+      document.getElementById('locGate').style.display = 'none';
+      document.getElementById('locArea').style.display = 'block';
+      // Re-measure the (previously hidden) map so tiles/layers render correctly.
+      setTimeout(() => map.invalidateSize(), 50);
+    }
+
+    async function unlockLocations() {
+      const pw = document.getElementById('gatePw').value;
+      setGateStatus('');
+      if (!pw) { setGateStatus('Enter your password first.', 'err'); return; }
+      try {
+        const { hex } = await getVaultCrypto(pw);
+        let payloadCipher = null;
+
+        // 1) Local encrypted cache (fast, works offline).
+        try {
+          const cached = localStorage.getItem(VAULT_CACHE);
+          if (cached) {
+            const c = JSON.parse(cached);
+            if (c && c.hex === hex) payloadCipher = c;
+          }
+        } catch (e) {}
+
+        // 2) Cloud vault.
+        if (!payloadCipher) {
+          const res = await fetch('/.netlify/functions/vault?key=' + encodeURIComponent(hex));
+          const json = await res.json();
+          if (json && json.found) payloadCipher = JSON.parse(json.data);
+        }
+
+        if (!payloadCipher) {
+          // No vault stored for this password yet (first time, or never saved).
+          locations = [];
+          saveLocations();
+          hideGate();
+          renderMarkers();
+          renderSavedList();
+          setGateStatus('No saved locations found for that password yet. Add some below, then press 💾 Save to store them for this password.', 'warn');
+          return;
+        }
+
+        const parsed = await vaultDecrypt(pw, payloadCipher);
+        if (parsed && Array.isArray(parsed.locations)) {
+          locations = parsed.locations;
+          saveLocations();
+          renderMarkers();
+          renderSavedList();
+          hideGate();
+          setGateStatus('🔓 Pulled up ' + locations.length + ' location(s).', 'ok');
+          if (locations.length) map.setView([locations[0].lat, locations[0].lon], 9);
+        } else {
+          setGateStatus('Saved data was empty or unrecognized.', 'err');
+        }
+      } catch (e) {
+        console.error(e);
+        setGateStatus('⚠️ Could not unlock. Wrong password or corrupted data? ' + e.message, 'err');
+      }
+    }
+
+    // ---------- Wire up ----------
+    document.getElementById('btnSearch').addEventListener('click', () => {
+      const q = document.getElementById('locSearch').value.trim();
+      if (q) addFromSearch(q);
+    });
+    document.getElementById('btnQuickAdd').addEventListener('click', () => {
+      const q = document.getElementById('quickAdd').value.trim();
+      if (q) addFromSearch(q);
+    });
+    document.getElementById('locSearch').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('btnSearch').click(); });
+    document.getElementById('quickAdd').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('btnQuickAdd').click(); });
+    document.getElementById('btnMonitor').addEventListener('click', monitorAll);
+    document.getElementById('btnClear').addEventListener('click', clearLocations);
+    document.getElementById('btnVaultSave').addEventListener('click', saveToVault);
+    document.getElementById('btnVaultLoad').addEventListener('click', loadFromVault);
+    document.getElementById('vaultPw').addEventListener('keydown', (e) => { if (e.key === 'Enter') saveToVault(); });
+    document.getElementById('btnUnlock').addEventListener('click', () => unlockLocations());
+    document.getElementById('gatePw').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlockLocations(); });
+
+    showGate();
+    renderMarkers();
+    renderSavedList();
+    setGateStatus('Enter your password to pull up your saved locations.', '');
+  </script>
+</body>
+</html>
