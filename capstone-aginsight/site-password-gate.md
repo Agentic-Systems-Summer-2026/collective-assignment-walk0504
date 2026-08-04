@@ -36,11 +36,20 @@ the correct password, which then pulls the locations up (from the encrypted vaul
   (`aginsight_vault_cache`) in addition to being POSTed to the cloud, so unlocking works
   even offline / on repeat visits.
 
+## Commodity selection (added 2026-08-04)
+
+Users can now **select which commodity** to include in every monitoring cycle:
+- A "📦 Monitor commodity" dropdown sits in the **Live Monitoring Results** section.
+- Options: Wheat ($5.72/bu), Corn ($4.18/bu), Soybeans ($12.10/bu), Cotton ($0.85/lb), Oats ($3.40/bu), stored in `COMMODITIES` in `index.html`.
+- The chosen commodity's name + price replace the old hardcoded wheat line in alerts and is shown as a "Commodity" row on each monitor card.
+- The selection is **persisted in the password vault** (saved/restored with the locations), so a returning user gets their commodity back on unlock.
+- Prices are labeled sample/demo constants (front-end has no Alpha Vantage key); the backend `capstone-aginsight/main.py` fetches live wheat via Alpha Vantage when a key is present.
+
 ## Files changed
 
 | File | Change |
 |------|--------|
-| `agri-ai-site/index.html` | Added lock-gate HTML/CSS, gate JS (`unlockLocations`, `showGate`/`hideGate`), empty-on-load state, local encrypted cache on save, gate wire-up. `dist/` is generated from this. |
+| `agri-ai-site/index.html` | Added lock-gate HTML/CSS, gate JS (`unlockLocations`, `showGate`/`hideGate`), empty-on-load state, local encrypted cache on save, gate wire-up, and the commodity selector (`commoditySel` + `COMMODITIES`). `dist/` is generated from this. |
 | `agri-ai-site/dist/index.html` | Rebuilt via `node scripts/build.js` (copies `index.html`; `dist/` is git-ignored build output). |
 | `agri-ai-site/netlify/functions/vault.mjs` | Unchanged — pre-existing Netlify Function for storing/retrieving encrypted vault blobs. |
 

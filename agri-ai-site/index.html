@@ -271,6 +271,19 @@
     <div class="container">
       <h2>📡 Live Monitoring Results</h2>
       <p class="lead" id="monitorsLead">Run a monitoring cycle to see validated alerts for your saved locations.</p>
+
+      <div class="loc-search-bar">
+        <label for="commoditySel" style="font-weight:600;color:var(--green-dark);">📦 Monitor commodity:</label>
+        <select id="commoditySel" aria-label="Select commodity" style="padding:0.7rem 1rem;border:1px solid #bcd5b8;border-radius:8px;font-size:0.95rem;background:#fff;color:var(--text);">
+          <option value="wheat">Wheat</option>
+          <option value="corn">Corn</option>
+          <option value="soybeans">Soybeans</option>
+          <option value="cotton">Cotton</option>
+          <option value="oats">Oats</option>
+        </select>
+        <span class="loc-note" id="commodityNote"></span>
+      </div>
+
       <div class="monitors" id="monitors"></div>
     </div>
   </section>
@@ -362,7 +375,23 @@
   <script>
     // ---------- State ----------
     const STORAGE_KEY = 'aginsight_locations';
-    const WHEAT = 5.72;                 // demo constant (global wheat price)
+    // Selectable commodities (which price to include in every monitoring cycle).
+    const COMMODITIES = {
+      wheat:    { name: 'Wheat',    price: 5.72,  unit: 'bu' },
+      corn:     { name: 'Corn',     price: 4.18,  unit: 'bu' },
+      soybeans: { name: 'Soybeans', price: 12.10, unit: 'bu' },
+      cotton:   { name: 'Cotton',   price: 0.85,  unit: 'lb' },
+      oats:     { name: 'Oats',     price: 3.40,  unit: 'bu' }
+    };
+    let commodityKey = 'wheat';
+    function commodity() { return COMMODITIES[commodityKey] || COMMODITIES.wheat; }
+    function setCommodity(k) {
+      if (COMMODITIES[k]) commodityKey = k;
+      const sel = document.getElementById('commoditySel');
+      if (sel) sel.value = commodityKey;
+      const note = document.getElementById('commodityNote');
+      if (note) note.textContent = 'Including ' + commodity().name + ' price in monitoring cycles.';
+    }
     const FALLBACK = { temperature_f: 96, rain_chance_percent: 15, wind_speed_mph: 13, data_source: 'fallback' };
 
     // Seed with Weatherford, OK so the page isn't empty.
@@ -563,9 +592,10 @@
       else if (w.temperature_f >= 95) alerts.push(`Heat advisory: ${w.temperature_f}°F`);
       if (w.wind_speed_mph >= 20) alerts.push(`High wind advisory: ${w.wind_speed_mph} mph`);
       if (w.rain_chance_percent >= 70) alerts.push(`Heavy rain may affect field work (${w.rain_chance_percent}%)`);
-      alerts.push(`Wheat price: $${WHEAT.toFixed(2)}/bu`);
-      const held = w.data_source === 'fallback' || alerts.length <= 1; // only the wheat line = nothing actionable
-      return { alerts, held, w };
+      const c = commodity();
+      alerts.push(`${c.name} price: $${c.price.toFixed(2)}/${c.unit}`);
+      const held = w.data_source === 'fallback' || alerts.length <= 1; // only the price line = nothing actionable
+      return { alerts, held, w, commodity: c };
     }
 
     function renderMonitorCard(loc) {
@@ -598,8 +628,9 @@
         w = await fetchWeather(loc);
       } catch (e) { /* fallback */ }
 
-      const { alerts, held } = buildCycle(w, loc.name);
+      const { alerts, held, commodity: c } = buildCycle(w, loc.name);
       let html = `<div class="row"><span class="label">Location</span><span class="value">${escapeHtml(dispLabel(loc))}${loc.nick ? ' <span style="opacity:.6">(' + escapeHtml(loc.name) + ')</span>' : ''}</span></div>`;
+      html += `<div class="row"><span class="label">Commodity</span><span class="value">${escapeHtml(c.name)} — $${c.price.toFixed(2)}/${c.unit}</span></div>`;
       html += `<div class="row"><span class="label">Temperature</span><span class="value">${w.temperature_f} °F</span></div>`;
       html += `<div class="row"><span class="label">Wind Speed</span><span class="value">${w.wind_speed_mph} mph</span></div>`;
       html += `<div class="row"><span class="label">Rain Chance</span><span class="value">${w.rain_chance_percent} %</span></div>`;
@@ -681,7 +712,7 @@
       if (!locations.length) { setVaultStatus('Add at least one location before saving.', 'err'); return; }
       try {
         const { key, hex } = await getVaultCrypto(pw);
-        const payload = await vaultEncrypt(pw, { locations, savedAt: new Date().toISOString() });
+        const payload = await vaultEncrypt(pw, { locations, commodity: commodityKey, savedAt: new Date().toISOString() });
         // Keep an encrypted copy locally too, so the next unlock works even offline.
         try {
           localStorage.setItem(VAULT_CACHE, JSON.stringify({ hex, iv: payload.iv, data: payload.data }));
@@ -710,6 +741,7 @@
         const parsed = await vaultDecrypt(pw, payload);
         if (parsed && Array.isArray(parsed.locations) && parsed.locations.length) {
           locations = parsed.locations;
+          if (parsed.commodity) setCommodity(parsed.commodity);
           saveLocations();
           renderMarkers();
           renderSavedList();
@@ -797,6 +829,7 @@
         const parsed = await vaultDecrypt(pw, payloadCipher);
         if (parsed && Array.isArray(parsed.locations)) {
           locations = parsed.locations;
+          if (parsed.commodity) setCommodity(parsed.commodity);
           saveLocations();
           renderMarkers();
           renderSavedList();
@@ -831,10 +864,12 @@
     document.getElementById('btnUnlock').addEventListener('click', () => unlockLocations());
     document.getElementById('gatePw').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlockLocations(); });
     document.getElementById('btnStartFresh').addEventListener('click', startFresh);
+    document.getElementById('commoditySel').addEventListener('change', (e) => setCommodity(e.target.value));
 
     showGate();
     renderMarkers();
     renderSavedList();
+    setCommodity(commodityKey);
     setGateStatus('', '');
   </script>
 </body>
