@@ -62,3 +62,17 @@ I also added a human approval step before the program writes the final summary t
 To test everything, I purposely broke the summary prompt by making it an empty string. The request failed, and the trace showed that the plan and answers steps worked while the summary step failed. After that, I fixed the prompt, ran the program again, and confirmed everything worked correctly.
 
 ChatGPT helped me write parts of the trace logging code and troubleshoot problems like indentation and error handling. I tested every change myself by running the program, checking the trace, testing both the approval and rejection paths, creating a real failure, and making sure the final version worked correctly.
+
+## Final Capstone Completion
+
+What I built:
+I completed the final version of AgInsight, an agentic AI system that monitors weather and commodity data, generates alerts, validates every important statement using grounding, and records each monitoring cycle through observability logging. I also completed teh project website, final report, presentation, evaluation evidence, and blameless postmortem. 
+
+What failed:
+The biggest challenges during the final phase involved making sure every part of the project worked together. I ran into issues with API rate limits, formatting, and making sure my evaluation results accurately reflected the system's behavior. Preparing all of the final deliverables also took much longer than I expected. 
+
+What I changed:
+I finalized the grounding workflow, improved fallback behavior for external APIs, completed teh automated evaluation suite, verified all eight evaluation scenarios passed, updated the documentation, and prepared the final presentation and demonstrations. I also reviewed the entire project to make sure the code, report, and presentation were consistent with one anohter. 
+
+Where AI helped:
+AI helped me to troubleshoot Python code, improve documentation, practice my presentation, and create the netfliy website. I verified everything by running the program myself, reviewing the alerts against the source data, confirming the results, and making sure the final version of AgInsight behaved as expeected before submission. 
